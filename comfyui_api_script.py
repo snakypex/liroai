@@ -537,7 +537,7 @@ def check_and_install_missing_nodes(client, workflow, comfyui_path=None, auto_re
             print("\n✓ Installation terminée!")
             
             if auto_restart and comfyui_path:
-                response = input("\n❓ Voulez-vous redémarrer ComfyUI automatiquement? (o/n): ")
+                response = o
                 if response.lower() in ['o', 'y', 'oui', 'yes']:
                     if restart_comfyui(comfyui_path):
                         print("\n✓ ComfyUI redémarré avec succès!")
