@@ -410,7 +410,7 @@ def restart_comfyui(comfyui_path, wait_time=10):
     max_retries = 30
     for i in range(max_retries):
         try:
-            urllib.request.urlopen("http://127.0.0.1:8188/", timeout=1)
+            urllib.request.urlopen("http://localhost:18188/", timeout=1)
             print(f"   ✓ ComfyUI est opérationnel!")
             return True
         except:
