@@ -16,13 +16,13 @@ PIP_PACKAGES=(
 )
 
 NODES=(
-    "https://github.com/kijai/ComfyUI-WanVideoWrapper",
-    "https://github.com/city96/ComfyUI-GGUF",
-    "https://github.com/city96/ComfyUI-GGUF",
-    "https://github.com/comfyanonymous/ComfyUI",  # Node natif
-    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite",
-    "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation",
-    "https://github.com/yolain/ComfyUI-Easy-Use",
+    "https://github.com/kijai/ComfyUI-WanVideoWrapper"
+    "https://github.com/city96/ComfyUI-GGUF"
+    "https://github.com/city96/ComfyUI-GGUF"
+    "https://github.com/comfyanonymous/ComfyUI"
+    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
+    "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation"
+    "https://github.com/yolain/ComfyUI-Easy-Use"
     "https://github.com/SeanScripts/ComfyUI-Unload-Model"
 )
 
