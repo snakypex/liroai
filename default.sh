@@ -23,6 +23,7 @@ NODES=(
     "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation"
     "https://github.com/yolain/ComfyUI-Easy-Use"
     "https://github.com/SeanScripts/ComfyUI-Unload-Model"
+    "https://github.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p"
 )
 
 WORKFLOWS=(
