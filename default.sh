@@ -109,6 +109,9 @@ function provisioning_get_nodes() {
             fi
         fi
     done
+    # Télécharger le fichier comfy_ui_node_output_width_height_for_480_p_or_720_p.py
+    printf "Downloading additional node: comfy_ui_node_output_width_height_for_480_p_or_720_p.py...\n"
+    curl -L -o "${COMFYUI_DIR}/custom_nodes/comfy_ui_node_output_width_height_for_480_p_or_720_p.py" "https://raw.githubusercontent.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p/refs/heads/main/comfy_ui_node_output_width_height_for_480_p_or_720_p.py"
 }
 
 function provisioning_get_files() {
