@@ -606,7 +606,7 @@ def main():
                     update_response = requests.post(
                         "https://api.liroai.com/v1/generation/finished",
                         headers=headers,
-                        data={"generation_id": generation_id, "video_url": data["url"]}
+                        data={"generation_id": generation_id, "result_url": data["url"]}
                     )
                     print(update_response)
                     if update_response.status_code == 200:
