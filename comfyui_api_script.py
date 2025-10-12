@@ -507,16 +507,16 @@ def main():
     # Initialisation du client
     client = ComfyUIClient()
 
-    while True :
-        try :
-            #On test la connexion à ComfyUI
+    while True:
+        try:
             print("Connexion à ComfyUI...")
             client.get_node_mappings()
-            break
-        except Exception as e :
-            print(f"Erreur lors de la connexion à ComfyUI: {e}")
+            print("✅ Connexion réussie")
+            break  # On sort de la boucle si tout se passe bien
+        except Exception as e:
+            print(f"❌ Erreur lors de la connexion à ComfyUI : {e}")
+            print("Nouvel essai dans 2 secondes...")
             time.sleep(2)
-            continue
 
     while True:
         headers = {
