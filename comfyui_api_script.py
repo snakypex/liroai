@@ -507,6 +507,17 @@ def main():
     # Initialisation du client
     client = ComfyUIClient()
 
+    while True :
+        try :
+            #On test la connexion à ComfyUI
+            print("Connexion à ComfyUI...")
+            client.get_node_mappings()
+            break
+        except Exception as e :
+            print(f"Erreur lors de la connexion à ComfyUI: {e}")
+            time.sleep(2)
+            continue
+
     while True:
         headers = {
             "Authorization": f"Bearer {os.getenv('LIRO_TOKEN')}",
@@ -519,7 +530,7 @@ def main():
                 image_url = data.get("image_url")
                 prompt = data.get("enchanced_prompt")
                 length = data.get("length")
-                generation_id = data.get("id")
+                generation_id = data.get("generation_id")
                 resolution = data.get("resolution")
                 print(f"Processing generation {generation_id} with image_url: {image_url}, prompt: {prompt[:100]}..., length: {length}")
             else:
@@ -585,12 +596,23 @@ def main():
                     with open(emplacement, "rb") as f:
                         r = requests.post(
                             "https://cdn.liroai.com/upload.php",
-                            headers={"Authorization": f"Bearer {os.getenv('LIRO_TOKEN')}"},
+                            headers=headers,
                             files={"file": (emplacement, f)}
                         )
                     r.raise_for_status()  # lève une exception si code 4xx/5xx
                     data = r.json()
                     print("Lien du fichier:", data["url"])
+                    # Mise à jour de l'API avec le lien de la vidéo
+                    update_response = requests.post(
+                        "https://api.liroai.com/v1/generation/finished",
+                        headers=headers,
+                        data={"generation_id": generation_id, "video_url": data["url"]}
+                    )
+                    print(update_response)
+                    if update_response.status_code == 200:
+                        print("API mise à jour avec succès")
+                    else:
+                        print("Échec de la mise à jour de l'API:", update_response.text)
                 except requests.exceptions.RequestException as e:
                     print("Erreur réseau ou HTTP:", e)
                 except ValueError:
