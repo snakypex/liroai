@@ -578,7 +578,7 @@ def main():
             for video in videos:
                 filename = video['filename']
                 subfolder = video.get('subfolder', '')
-                emplacement = "output/{subfolder}/{filename}" if subfolder else f"  Emplacement: output/{filename}"
+                emplacement = f"/workspace/ComfyUI/output/{subfolder}/{filename}" if subfolder else f"/workspace/ComfuUI/output/{filename}"
                 print(f"✓ Vidéo générée: {filename}")
                 print(f"  Emplacement: {emplacement}")
                 try:
