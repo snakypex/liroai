@@ -510,7 +510,7 @@ def main():
     while True:
         try:
             print("Connexion à ComfyUI...")
-            client.get_node_mappings()
+            urllib.request.urlopen(f"http://127.0.0.1:18188/object_info")
             print("✅ Connexion réussie")
             break  # On sort de la boucle si tout se passe bien
         except Exception as e:
