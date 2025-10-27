@@ -496,15 +496,23 @@ def create_workflow(
 
 def download_image_from_url(url, save_path="temp_image.png"):
     """Télécharge une image depuis une URL"""
-    try:
-        with urllib.request.urlopen(url) as response:
-            image_data = response.read()
-            with open(save_path, 'wb') as f:
-                f.write(image_data)
-        return save_path
-    except Exception as e:
-        print(f"Erreur lors du téléchargement de l'image: {e}")
-        return None
+    while True:
+        try:
+            # Ajout du timeout
+            with urllib.request.urlopen(url, timeout=30) as response:
+                image_data = response.read()
+                with open(save_path, 'wb') as f:
+                    f.write(image_data)
+            return save_path
+
+        except urllib.error.URLError as e:
+            print(f"Tentative échouée: {e}")
+            print(f"Nouvelle tentative dans 3s...")
+            time.sleep(3)
+
+        except Exception as e:
+            print(f"Erreur inattendue: {e}")
+            return None
 
 def main():
     # Initialisation du client
