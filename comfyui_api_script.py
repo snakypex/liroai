@@ -10,6 +10,9 @@ from datetime import datetime
 import requests
 import urllib.error  # en haut du fichier
 
+from requests import Timeout
+
+
 class ComfyUIClient:
     def __init__(self, server_address="127.0.0.1:18188"):
         self.server_address = server_address
@@ -522,7 +525,12 @@ def main():
         headers = {
             "Authorization": f"Bearer {os.getenv('LIRO_TOKEN')}",
         }
-        response = requests.post("https://api.liroai.com/v1/generation/next", headers=headers, timeout=30)
+        while True:
+            try:
+                response = requests.post("https://api.liroai.com/v1/generation/next", headers=headers, timeout=30)
+                break
+            except Exception as e:
+                time.sleep(3)
         if response.status_code == 200:
             data = response.json()
             if data:
