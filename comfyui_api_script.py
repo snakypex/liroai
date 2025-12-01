@@ -15,12 +15,6 @@ from pathlib import Path
 
 from requests import Timeout
 
-# Pour l'upscaling, on utilise Real-ESRGAN
-try:
-    from realesrgan import RealESRGAN
-except ImportError:
-    print("⚠️  Real-ESRGAN non installé. Installez-le avec: pip install realesrgan")
-
 
 class ComfyUIClient:
     def __init__(self, server_address="127.0.0.1:18188"):
@@ -128,22 +122,12 @@ class ComfyUIClient:
 
 
 class VideoUpscaler:
-    """Classe pour upscaler les vidéos avec Real-ESRGAN"""
+    """Upscaler vidéo avec interpolation OpenCV Lanczos4 (toujours disponible)"""
     
-    def __init__(self, scale_factor=2, model_name='RealESRGAN_x2plus'):
-        """
-        Initialise l'upscaler
-        scale_factor: 2 pour 2x, 4 pour 4x
-        model_name: 'RealESRGAN_x2plus', 'RealESRGAN_x4plus', etc.
-        """
+    def __init__(self, scale_factor=2):
+        """Initialise l'upscaler"""
         self.scale_factor = scale_factor
-        self.model_name = model_name
-        try:
-            self.upsampler = RealESRGAN(0, scale=scale_factor, model_path=None, model_name=model_name, tile=200)
-            self.upsampler.cuda()
-        except Exception as e:
-            print(f"⚠️  GPU non disponible, utilisation du CPU: {e}")
-            self.upsampler = RealESRGAN(0, scale=scale_factor, model_path=None, model_name=model_name, tile=200)
+        print(f"✓ Upscaler initialisé (Lanczos4 x{scale_factor})")
 
     def upscale_video(self, input_path, output_path, target_height=None):
         """
@@ -172,10 +156,8 @@ class VideoUpscaler:
         
         output_width, output_height = get_target_resolution(width, height, target_height)
         
-        # Calculer le scale factor réel
-        scale = output_height / height
-        
-        print(f"🎯 Upscaling vers {output_width}x{output_height} (ratio {width}:{height} préservé, scale={scale:.2f}x)")
+        print(f"🎯 Upscaling vers {output_width}x{output_height} avec Lanczos4")
+        print(f"   Ratio {width}:{height} préservé")
 
         # Définir le codec et créer le VideoWriter
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -193,12 +175,9 @@ class VideoUpscaler:
                 if not ret:
                     break
 
-                # Upscale du frame avec le scale factor calculé
-                upscaled_frame = self.upsampler.enhance(frame, outscale=scale)[0]
-
-                # Assurer que les dimensions correspondent exactement (important pour le codec)
-                if upscaled_frame.shape[1] != output_width or upscaled_frame.shape[0] != output_height:
-                    upscaled_frame = cv2.resize(upscaled_frame, (output_width, output_height), interpolation=cv2.INTER_LANCZOS4)
+                # Upscale simple avec Lanczos4
+                upscaled_frame = cv2.resize(frame, (output_width, output_height), 
+                                           interpolation=cv2.INTER_LANCZOS4)
 
                 out.write(upscaled_frame)
                 
@@ -590,18 +569,8 @@ def create_workflow(
 def get_target_resolution(current_width, current_height, target_height):
     """
     Calcule la résolution cible en gardant le ratio d'aspect
-    current_width, current_height: dimensions actuelles de la vidéo
-    target_height: hauteur cible (480, 720, 1080)
-    Retourne: (target_width, target_height)
-    
-    Exemple:
-    - Portrait (480x600) avec target_height=720 → (576, 720)
-    - Paysage (1280x720) avec target_height=720 → (1280, 720)
     """
-    # Calculer le ratio d'aspect
     aspect_ratio = current_width / current_height
-    
-    # Calculer la largeur basée sur le ratio
     target_width = int(target_height * aspect_ratio)
     
     # Arrondir à un multiple de 8 pour éviter les problèmes de codec
@@ -635,9 +604,9 @@ def main():
     # Initialisation du client
     client = ComfyUIClient()
 
-    # Initialisation de l'upscaler (à adapter selon votre config GPU)
-    print("🚀 Initialisation de l'upscaler Real-ESRGAN...")
-    upscaler = VideoUpscaler(scale_factor=2, model_name='RealESRGAN_x2plus')
+    # Initialisation de l'upscaler (ultra-simple)
+    print("🚀 Initialisation de l'upscaler...")
+    upscaler = VideoUpscaler(scale_factor=2)
 
     while True:
         try:
@@ -669,7 +638,7 @@ def main():
                 prompt = data.get("enchanced_prompt")
                 length = data.get("length")
                 generation_id = data.get("generation_id")
-                resolution = data.get("resolution", 720)  # Par défaut 720p
+                resolution = data.get("resolution", 720)
                 print(f"Processing generation {generation_id} with image_url: {image_url}, prompt: {prompt[:100]}..., length: {length}, target resolution: {resolution}p")
             else:
                 print("No generation to process")
@@ -680,7 +649,6 @@ def main():
             time.sleep(5)
             continue
 
-        # Création du workflow (TOUJOURS en 480p)
         print(f"\n📋 Création du workflow:")
         print(f"  - Génération: 480p")
         print(f"  - Frames: {length}")
@@ -706,22 +674,18 @@ def main():
         uploaded_filename = upload_response.get('name', local_image_path)
         print(f"✓ Image uploadée: {uploaded_filename}")
 
-        # Mise à jour du workflow avec le nom du fichier uploadé
         workflow['52']['inputs']['image'] = uploaded_filename
 
-        # Envoi du workflow
         print("\n📨 Envoi du workflow à ComfyUI...")
         response = client.queue_prompt(workflow)
         prompt_id = response['prompt_id']
         print(f"✓ Workflow en queue avec ID: {prompt_id}")
 
-        # Attente de la complétion
         print("⏳ Génération en cours... (cela peut prendre plusieurs minutes)")
         result = client.wait_for_completion(prompt_id)
 
         print("\n✓ Génération terminée!")
 
-        # Récupération de la vidéo générée
         if 'outputs' in result and '82' in result['outputs']:
             videos = result['outputs']['82'].get('gifs', [])
             for video in videos:
@@ -732,7 +696,6 @@ def main():
                 print(f"\n✓ Vidéo générée: {filename}")
                 print(f"  Emplacement: {video_path}")
 
-                # UPSCALING
                 if resolution > 480:
                     print(f"\n🎬 Démarrage de l'upscaling: 480p → {resolution}p")
                     upscaled_video_path = video_path.replace('.mp4', f'_upscaled_{resolution}p.mp4')
@@ -749,7 +712,6 @@ def main():
                     video_to_upload = video_path
                     print(f"ℹ️  Pas d'upscaling nécessaire (480p)")
 
-                # Upload de la vidéo
                 print(f"\n📤 Upload de la vidéo...")
                 try:
                     with open(video_to_upload, "rb") as f:
@@ -762,7 +724,6 @@ def main():
                     data = r.json()
                     print("✓ Lien du fichier:", data["url"])
                     
-                    # Mise à jour de l'API
                     update_response = requests.post(
                         "https://api.liroai.com/v1/generation/finished",
                         headers=headers,
@@ -782,7 +743,6 @@ def main():
         else:
             print("❌ Aucune vidéo trouvée dans les résultats")
 
-        # Nettoyage
         if os.path.exists(local_image_path):
             os.remove(local_image_path)
             print(f"\n🧹 Fichier temporaire nettoyé: {local_image_path}")
