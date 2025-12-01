@@ -630,23 +630,54 @@ def download_image_from_url(url, save_path="temp_image.png"):
             return None
 
 
-def get_target_resolution(resolution_string):
+def get_target_resolution(resolution_string, original_width, original_height):
     """
     Convertit une chaîne de résolution (ex: '720p', '1080p') en tuple (width, height)
+    en gardant le ratio d'aspect de la vidéo originale.
+    
+    Supporte les vidéos horizontales (16:9), verticales (9:16) et carrées (1:1).
+    
+    Args:
+        resolution_string: La résolution cible ('480', '540', '720', '1080', '1440', '4k')
+        original_width: Largeur de la vidéo originale en pixels
+        original_height: Hauteur de la vidéo originale en pixels
+    
+    Returns:
+        Tuple (width, height) avec le ratio d'aspect préservé
+    
+    Exemples:
+        - Vidéo 1920x1080 (16:9) avec '720' → (1280, 720)
+        - Vidéo 1080x1920 (9:16) avec '720' → (405, 720)
+        - Vidéo 1080x1080 (1:1) avec '720' → (720, 720)
     """
+    # Résolutions de référence (hauteur cible en pixels)
     resolution_map = {
-        '480': (854, 480),
-        '540': (960, 540),
-        '720': (1280, 720),
-        '1080': (1920, 1080),
-        '1440': (2560, 1440),
-        '4k': (3840, 2160),
+        '480': 480,
+        '540': 540,
+        '720': 720,
+        '1080': 1080,
+        '1440': 1440,
+        '4k': 2160,
     }
     
-    if resolution_string in resolution_map:
-        return resolution_map[resolution_string]
-    else:
+    if resolution_string not in resolution_map:
         raise ValueError(f"Résolution non reconnue: {resolution_string}")
+    
+    target_height = resolution_map[resolution_string]
+    
+    # Calcul du ratio d'aspect original
+    aspect_ratio = original_width / original_height
+    
+    # Calcul de la largeur en fonction du ratio d'aspect
+    target_width = int(target_height * aspect_ratio)
+    
+    # Arrondir à un multiple de 8 pour compatibilité avec les codecs vidéo
+    target_width = (target_width // 8) * 8
+    target_height = (target_height // 8) * 8
+    
+    print(f"Ratio d'aspect: {aspect_ratio:.2f} ({original_width}x{original_height} → {target_width}x{target_height})")
+    
+    return (target_width, target_height)
 
 
 def main():
@@ -753,10 +784,17 @@ def main():
 
                 # Upscaling de la vidéo
                 try:
-                    target_res = get_target_resolution(resolution)
+                    # Récupérer les dimensions originales de la vidéo générée
+                    cap = cv2.VideoCapture(input_video_path)
+                    original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    cap.release()
+                    
+                    # Obtenir la résolution cible en préservant le ratio d'aspect
+                    target_res = get_target_resolution(str(resolution), original_width, original_height)
                     output_video_path = input_video_path.replace('.mp4', '_upscaled.mp4')
                     
-                    print(f"\nDémarrage de l'upscaling vers {resolution}...")
+                    print(f"\nDémarrage de l'upscaling vers {resolution}p...")
                     upscaler.upscale_video(input_video_path, output_video_path, target_resolution=target_res)
                     print(f"✓ Upscaling terminé!")
                     
