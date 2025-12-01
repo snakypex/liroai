@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""
+ComfyUI Video Upscaler - BSRGAN Edition
+Utilise le modèle BSRGAN (léger et haute qualité)
+"""
+
 import json
 import urllib.request
 import urllib.parse
@@ -6,14 +12,26 @@ import time
 import io
 import os
 from datetime import datetime
+from pathlib import Path
 
 import requests
 import urllib.error
 import cv2
 import numpy as np
-from pathlib import Path
 
 from requests import Timeout
+
+# Essayer d'importer BSRGAN
+BSRGAN_AVAILABLE = False
+try:
+    import torch
+    from basicsr.archs.rrdbnet_arch import RRDBNet
+    from realesrgan import RealESRGANer
+    BSRGAN_AVAILABLE = True
+    print("✓ Real-ESRGAN/BSRGAN disponible")
+except ImportError as e:
+    print(f"ℹ️  Real-ESRGAN non disponible, installation recommandée")
+    print(f"    pip install basicsr realesrgan")
 
 
 class ComfyUIClient:
@@ -122,19 +140,61 @@ class ComfyUIClient:
 
 
 class VideoUpscaler:
-    """Upscaler vidéo avec interpolation OpenCV Lanczos4 (toujours disponible)"""
+    """Upscaler vidéo haute qualité avec BSRGAN/Real-ESRGAN"""
     
     def __init__(self, scale_factor=2):
         """Initialise l'upscaler"""
         self.scale_factor = scale_factor
-        print(f"✓ Upscaler initialisé (Lanczos4 x{scale_factor})")
+        self.backend = None
+        self.upsampler = None
+        
+        if BSRGAN_AVAILABLE:
+            self._init_bsrgan()
+        else:
+            print("⚠️  Real-ESRGAN non disponible")
+            print("Installation recommandée pour meilleure qualité:")
+            print("  pip install basicsr realesrgan")
+            print("\nUtilisation du fallback Lanczos4...")
+            self.backend = 'lanczos4'
+
+    def _init_bsrgan(self):
+        """Initialise Real-ESRGAN avec modèle BSRGAN"""
+        try:
+            # BSRGAN est plus léger et plus rapide que RealESRGAN
+            model_name = 'BSRGANx2'  # ou 'RealESRGAN_x2plus' pour meilleure qualité
+            
+            print(f"🚀 Initialisation de {model_name}...")
+            
+            self.upsampler = RealESRGANer(
+                scale=self.scale_factor,
+                model_path=None,  # Auto-download
+                upscaler_name=model_name,
+                tile=200,  # Tile size pour économiser VRAM
+                tile_pad=10,
+                pre_pad=0,
+                half=True  # FP16 si disponible
+            )
+            
+            self.backend = 'bsrgan'
+            print(f"✓ {model_name} initialisé (scale={self.scale_factor}x)")
+            
+            # Vérifier GPU
+            if torch.cuda.is_available():
+                print(f"✓ GPU détecté: {torch.cuda.get_device_name()}")
+            else:
+                print("ℹ️  GPU non détecté, utilisation du CPU")
+                
+        except Exception as e:
+            print(f"❌ Erreur lors de l'initialisation de BSRGAN: {e}")
+            print("Fallback Lanczos4...")
+            self.backend = 'lanczos4'
 
     def upscale_video(self, input_path, output_path, target_height=None):
         """
         Upscale une vidéo en gardant le ratio d'aspect
         input_path: chemin vers la vidéo source
         output_path: chemin vers la vidéo de sortie
-        target_height: hauteur cible (480, 720, 1080) - None = 2x la hauteur actuelle
+        target_height: hauteur cible (480, 720, 1080)
         """
         cap = cv2.VideoCapture(input_path)
         
@@ -156,7 +216,7 @@ class VideoUpscaler:
         
         output_width, output_height = get_target_resolution(width, height, target_height)
         
-        print(f"🎯 Upscaling vers {output_width}x{output_height} avec Lanczos4")
+        print(f"🎯 Upscaling vers {output_width}x{output_height} avec {self.backend.upper()}")
         print(f"   Ratio {width}:{height} préservé")
 
         # Définir le codec et créer le VideoWriter
@@ -175,9 +235,12 @@ class VideoUpscaler:
                 if not ret:
                     break
 
-                # Upscale simple avec Lanczos4
-                upscaled_frame = cv2.resize(frame, (output_width, output_height), 
-                                           interpolation=cv2.INTER_LANCZOS4)
+                # Upscale du frame
+                if self.backend == 'bsrgan':
+                    upscaled_frame = self._upscale_bsrgan(frame, output_width, output_height)
+                else:  # lanczos4
+                    upscaled_frame = cv2.resize(frame, (output_width, output_height), 
+                                               interpolation=cv2.INTER_LANCZOS4)
 
                 out.write(upscaled_frame)
                 
@@ -192,6 +255,26 @@ class VideoUpscaler:
 
         print(f"✓ Upscaling terminé! {frame_count} frames traités")
         return True
+    
+    def _upscale_bsrgan(self, frame, target_width, target_height):
+        """Upscale un frame avec BSRGAN"""
+        try:
+            # BSRGAN utilise enhance()
+            upscaled, _ = self.upsampler.enhance(frame, outscale=self.scale_factor)
+            
+            # Assurer les dimensions exactes
+            if upscaled.shape[1] != target_width or upscaled.shape[0] != target_height:
+                upscaled = cv2.resize(upscaled, (target_width, target_height), 
+                                     interpolation=cv2.INTER_LANCZOS4)
+            
+            return upscaled
+            
+        except Exception as e:
+            print(f"⚠️  Erreur BSRGAN: {e}")
+            print("Fallback à Lanczos4...")
+            self.backend = 'lanczos4'
+            return cv2.resize(frame, (target_width, target_height), 
+                             interpolation=cv2.INTER_LANCZOS4)
 
 
 def create_workflow(
@@ -201,102 +284,56 @@ def create_workflow(
         resolution=480,
         length=81
 ):
-    """Crée le workflow avec les paramètres configurables - GÉNÉRATION TOUJOURS EN 480p"""
+    """Crée le workflow avec les paramètres configurables"""
 
     workflow = {
       "6": {
         "inputs": {
           "text": positive_prompt,
-          "clip": [
-            "84",
-            0
-          ]
+          "clip": ["84", 0]
         },
         "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP Text Encode (Positive Prompt)"
-        }
+        "_meta": {"title": "CLIP Text Encode (Positive Prompt)"}
       },
       "7": {
         "inputs": {
           "text": negative_prompt,
-          "clip": [
-            "84",
-            0
-          ]
+          "clip": ["84", 0]
         },
         "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP Text Encode (Negative Prompt)"
-        }
+        "_meta": {"title": "CLIP Text Encode (Negative Prompt)"}
       },
       "8": {
         "inputs": {
-          "samples": [
-            "88",
-            0
-          ],
-          "vae": [
-            "39",
-            0
-          ]
+          "samples": ["88", 0],
+          "vae": ["39", 0]
         },
         "class_type": "VAEDecode",
-        "_meta": {
-          "title": "VAE Decode"
-        }
+        "_meta": {"title": "VAE Decode"}
       },
       "39": {
-        "inputs": {
-          "vae_name": "Wan2.1_VAE.pth"
-        },
+        "inputs": {"vae_name": "Wan2.1_VAE.pth"},
         "class_type": "VAELoader",
-        "_meta": {
-          "title": "Charger VAE"
-        }
+        "_meta": {"title": "Charger VAE"}
       },
       "50": {
         "inputs": {
-          "width": [
-            "94",
-            0
-          ],
-          "height": [
-            "94",
-            1
-          ],
+          "width": ["94", 0],
+          "height": ["94", 1],
           "length": length,
           "batch_size": 1,
-          "positive": [
-            "85",
-            0
-          ],
-          "negative": [
-            "7",
-            0
-          ],
-          "vae": [
-            "39",
-            0
-          ],
-          "start_image": [
-            "52",
-            0
-          ]
+          "positive": ["85", 0],
+          "negative": ["7", 0],
+          "vae": ["39", 0],
+          "start_image": ["52", 0]
         },
         "class_type": "WanImageToVideo",
-        "_meta": {
-          "title": "WanImageVersVidéo"
-        }
+        "_meta": {"title": "WanImageVersVidéo"}
       },
       "52": {
-        "inputs": {
-          "image": "4.png"
-        },
+        "inputs": {"image": "4.png"},
         "class_type": "LoadImage",
-        "_meta": {
-          "title": "Charger Image"
-        }
+        "_meta": {"title": "Charger Image"}
       },
       "57": {
         "inputs": {
@@ -309,27 +346,13 @@ def create_workflow(
           "start_at_step": 0,
           "end_at_step": 4,
           "return_with_leftover_noise": "enable",
-          "model": [
-            "67",
-            0
-          ],
-          "positive": [
-            "50",
-            0
-          ],
-          "negative": [
-            "50",
-            1
-          ],
-          "latent_image": [
-            "50",
-            2
-          ]
+          "model": ["67", 0],
+          "positive": ["50", 0],
+          "negative": ["50", 1],
+          "latent_image": ["50", 2]
         },
         "class_type": "KSamplerAdvanced",
-        "_meta": {
-          "title": "KSampler (Avancé)"
-        }
+        "_meta": {"title": "KSampler (Avancé)"}
       },
       "58": {
         "inputs": {
@@ -342,99 +365,57 @@ def create_workflow(
           "start_at_step": 4,
           "end_at_step": 1000,
           "return_with_leftover_noise": "disable",
-          "model": [
-            "68",
-            0
-          ],
-          "positive": [
-            "50",
-            0
-          ],
-          "negative": [
-            "50",
-            1
-          ],
-          "latent_image": [
-            "87",
-            0
-          ]
+          "model": ["68", 0],
+          "positive": ["50", 0],
+          "negative": ["50", 1],
+          "latent_image": ["87", 0]
         },
         "class_type": "KSamplerAdvanced",
-        "_meta": {
-          "title": "KSampler (Avancé)"
-        }
+        "_meta": {"title": "KSampler (Avancé)"}
       },
       "61": {
-        "inputs": {
-          "unet_name": "Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"
-        },
+        "inputs": {"unet_name": "Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"},
         "class_type": "UnetLoaderGGUF",
-        "_meta": {
-          "title": "Unet Loader (GGUF)"
-        }
+        "_meta": {"title": "Unet Loader (GGUF)"}
       },
       "62": {
-        "inputs": {
-          "unet_name": "Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"
-        },
+        "inputs": {"unet_name": "Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"},
         "class_type": "UnetLoaderGGUF",
-        "_meta": {
-          "title": "Unet Loader (GGUF)"
-        }
+        "_meta": {"title": "Unet Loader (GGUF)"}
       },
       "64": {
         "inputs": {
           "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
           "strength_model": 0.9,
-          "model": [
-            "61",
-            0
-          ]
+          "model": ["61", 0]
         },
         "class_type": "LoraLoaderModelOnly",
-        "_meta": {
-          "title": "LoraLoaderModelOnly"
-        }
+        "_meta": {"title": "LoraLoaderModelOnly"}
       },
       "66": {
         "inputs": {
           "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
           "strength_model": 0.9,
-          "model": [
-            "62",
-            0
-          ]
+          "model": ["62", 0]
         },
         "class_type": "LoraLoaderModelOnly",
-        "_meta": {
-          "title": "LoraLoaderModelOnly"
-        }
+        "_meta": {"title": "LoraLoaderModelOnly"}
       },
       "67": {
         "inputs": {
           "shift": 8.000000000000002,
-          "model": [
-            "64",
-            0
-          ]
+          "model": ["64", 0]
         },
         "class_type": "ModelSamplingSD3",
-        "_meta": {
-          "title": "ModèleÉchantillonnageSD3"
-        }
+        "_meta": {"title": "ModèleÉchantillonnageSD3"}
       },
       "68": {
         "inputs": {
           "shift": 8.000000000000002,
-          "model": [
-            "66",
-            0
-          ]
+          "model": ["66", 0]
         },
         "class_type": "ModelSamplingSD3",
-        "_meta": {
-          "title": "ModèleÉchantillonnageSD3"
-        }
+        "_meta": {"title": "ModèleÉchantillonnageSD3"}
       },
       "82": {
         "inputs": {
@@ -448,15 +429,10 @@ def create_workflow(
           "trim_to_audio": False,
           "pingpong": False,
           "save_output": True,
-          "images": [
-            "83",
-            0
-          ]
+          "images": ["83", 0]
         },
         "class_type": "VHS_VideoCombine",
-        "_meta": {
-          "title": "Video Combine 🎥🅥🅗🅢"
-        }
+        "_meta": {"title": "Video Combine 🎥🅥🅗🅢"}
       },
       "83": {
         "inputs": {
@@ -466,15 +442,10 @@ def create_workflow(
           "fast_mode": True,
           "ensemble": True,
           "scale_factor": 1,
-          "frames": [
-            "8",
-            0
-          ]
+          "frames": ["8", 0]
         },
         "class_type": "RIFE VFI",
-        "_meta": {
-          "title": "RIFE VFI (recommend rife47 and rife49)"
-        }
+        "_meta": {"title": "RIFE VFI (recommend rife47 and rife49)"}
       },
       "84": {
         "inputs": {
@@ -482,84 +453,46 @@ def create_workflow(
           "type": "wan"
         },
         "class_type": "CLIPLoaderGGUF",
-        "_meta": {
-          "title": "CLIPLoader (GGUF)"
-        }
+        "_meta": {"title": "CLIPLoader (GGUF)"}
       },
       "85": {
         "inputs": {
-          "value": [
-            "6",
-            0
-          ],
-          "model": [
-            "84",
-            0
-          ]
+          "value": ["6", 0],
+          "model": ["84", 0]
         },
         "class_type": "UnloadModel",
-        "_meta": {
-          "title": "UnloadModel"
-        }
+        "_meta": {"title": "UnloadModel"}
       },
       "87": {
         "inputs": {
-          "value": [
-            "57",
-            0
-          ],
-          "model": [
-            "61",
-            0
-          ]
+          "value": ["57", 0],
+          "model": ["61", 0]
         },
         "class_type": "UnloadModel",
-        "_meta": {
-          "title": "UnloadModel"
-        }
+        "_meta": {"title": "UnloadModel"}
       },
       "88": {
         "inputs": {
-          "value": [
-            "58",
-            0
-          ],
-          "model": [
-            "62",
-            0
-          ]
+          "value": ["58", 0],
+          "model": ["62", 0]
         },
         "class_type": "UnloadModel",
-        "_meta": {
-          "title": "UnloadModel"
-        }
+        "_meta": {"title": "UnloadModel"}
       },
       "93": {
-        "inputs": {
-          "anything": [
-            "82",
-            0
-          ]
-        },
+        "inputs": {"anything": ["82", 0]},
         "class_type": "easy cleanGpuUsed",
-        "_meta": {
-          "title": "Clean VRAM Used"
-        }
+        "_meta": {"title": "Clean VRAM Used"}
       },
       "94": {
         "inputs": {
           "preset": "480p",
           "strategy": "video_mode",
           "round_to": 8,
-          "image": [
-            "52",
-            0
-          ]
+          "image": ["52", 0]
         },
         "class_type": "ResizeToPresetKeepAR",
-        "_meta": {
-          "title": "Resize To 480p (Keep AR)"
-        }
+        "_meta": {"title": "Resize To 480p (Keep AR)"}
       }
     }
 
@@ -567,13 +500,11 @@ def create_workflow(
 
 
 def get_target_resolution(current_width, current_height, target_height):
-    """
-    Calcule la résolution cible en gardant le ratio d'aspect
-    """
+    """Calcule la résolution cible en gardant le ratio d'aspect"""
     aspect_ratio = current_width / current_height
     target_width = int(target_height * aspect_ratio)
     
-    # Arrondir à un multiple de 8 pour éviter les problèmes de codec
+    # Arrondir à un multiple de 8
     target_width = (target_width // 8) * 8
     target_height = (target_height // 8) * 8
     
@@ -589,22 +520,18 @@ def download_image_from_url(url, save_path="temp_image.png"):
                 with open(save_path, 'wb') as f:
                     f.write(image_data)
             return save_path
-
         except urllib.error.URLError as e:
             print(f"Tentative échouée: {e}")
             print(f"Nouvelle tentative dans 3s...")
             time.sleep(3)
-
         except Exception as e:
             print(f"Erreur inattendue: {e}")
             return None
 
 
 def main():
-    # Initialisation du client
     client = ComfyUIClient()
 
-    # Initialisation de l'upscaler (ultra-simple)
     print("🚀 Initialisation de l'upscaler...")
     upscaler = VideoUpscaler(scale_factor=2)
 
@@ -639,7 +566,7 @@ def main():
                 length = data.get("length")
                 generation_id = data.get("generation_id")
                 resolution = int(data.get("resolution", 720))
-                print(f"Processing generation {generation_id} with image_url: {image_url}, prompt: {prompt[:100]}..., length: {length}, target resolution: {resolution}p")
+                print(f"Processing generation {generation_id}")
             else:
                 print("No generation to process")
                 time.sleep(5)
@@ -666,7 +593,7 @@ def main():
         local_image_path = download_image_from_url(image_url)
 
         if not local_image_path:
-            print("❌ Échec du téléchargement de l'image. Arrêt.")
+            print("❌ Échec du téléchargement de l'image.")
             continue
 
         print(f"📤 Upload de l'image vers ComfyUI...")
@@ -681,7 +608,7 @@ def main():
         prompt_id = response['prompt_id']
         print(f"✓ Workflow en queue avec ID: {prompt_id}")
 
-        print("⏳ Génération en cours... (cela peut prendre plusieurs minutes)")
+        print("⏳ Génération en cours...")
         result = client.wait_for_completion(prompt_id)
 
         print("\n✓ Génération terminée!")
@@ -694,10 +621,9 @@ def main():
                 video_path = f"/workspace/ComfyUI/output/{subfolder}/{filename}" if subfolder else f"/workspace/ComfyUI/output/{filename}"
                 
                 print(f"\n✓ Vidéo générée: {filename}")
-                print(f"  Emplacement: {video_path}")
 
                 if resolution > 480:
-                    print(f"\n🎬 Démarrage de l'upscaling: 480p → {resolution}p")
+                    print(f"\n🎬 Upscaling: 480p → {resolution}p")
                     upscaled_video_path = video_path.replace('.mp4', f'_upscaled_{resolution}p.mp4')
                     
                     success = upscaler.upscale_video(video_path, upscaled_video_path, target_height=resolution)
@@ -706,11 +632,11 @@ def main():
                         print(f"✓ Upscaling réussi!")
                         video_to_upload = upscaled_video_path
                     else:
-                        print(f"⚠️  Échec de l'upscaling, utilisation de la vidéo 480p")
+                        print(f"⚠️  Upscaling échoué, utilisation de la version 480p")
                         video_to_upload = video_path
                 else:
                     video_to_upload = video_path
-                    print(f"ℹ️  Pas d'upscaling nécessaire (480p)")
+                    print(f"ℹ️  Pas d'upscaling (déjà 480p)")
 
                 print(f"\n📤 Upload de la vidéo...")
                 try:
@@ -722,30 +648,27 @@ def main():
                         )
                     r.raise_for_status()
                     data = r.json()
-                    print("✓ Lien du fichier:", data["url"])
+                    print("✓ URL:", data["url"])
                     
                     update_response = requests.post(
                         "https://api.liroai.com/v1/generation/finished",
                         headers=headers,
                         data={"generation_id": generation_id, "result_url": data["url"]}
                     )
-                    print(update_response)
+                    
                     if update_response.status_code == 200:
-                        print("✓ API mise à jour avec succès")
+                        print("✓ API mise à jour")
                     else:
-                        print("❌ Échec de la mise à jour de l'API:", update_response.text)
+                        print("❌ Erreur API:", update_response.text)
                         
-                except requests.exceptions.RequestException as e:
-                    print("❌ Erreur réseau ou HTTP:", e)
-                except ValueError:
-                    print("❌ La réponse n'était pas du JSON valide")
+                except Exception as e:
+                    print(f"❌ Erreur upload: {e}")
 
         else:
-            print("❌ Aucune vidéo trouvée dans les résultats")
+            print("❌ Aucune vidéo trouvée")
 
         if os.path.exists(local_image_path):
             os.remove(local_image_path)
-            print(f"\n🧹 Fichier temporaire nettoyé: {local_image_path}")
 
 
 if __name__ == "__main__":
