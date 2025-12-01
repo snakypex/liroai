@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-ComfyUI Video Upscaler - Real-ESRGAN Official Repo Edition
-Uses the actively maintained Real-ESRGAN repository directly
-https://github.com/xinntao/Real-ESRGAN
-"""
-
 import json
 import urllib.request
 import urllib.parse
@@ -12,8 +5,6 @@ import uuid
 import time
 import io
 import os
-import sys
-import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -21,21 +12,11 @@ import requests
 import urllib.error
 import cv2
 import numpy as np
+from basicsr.archs.rrdbnet_arch import RRDBNet
+from realesrgan import RealESRGANer
+from PIL import Image
 
 from requests import Timeout
-
-# Try to import Real-ESRGAN from official repo
-REALESRGAN_AVAILABLE = False
-INFERENCE_ENGINE = None
-
-try:
-    from realesrgan import RealESRGANer
-    REALESRGAN_AVAILABLE = True
-    INFERENCE_ENGINE = 'realesrgan'
-    print("✓ Real-ESRGAN official repo detected")
-except ImportError:
-    print("ℹ️  Real-ESRGAN not found")
-    print("Install with: pip install realesrgan")
 
 
 class ComfyUIClient:
@@ -144,150 +125,124 @@ class ComfyUIClient:
 
 
 class VideoUpscaler:
-    """Upscaler vidéo haute qualité avec Real-ESRGAN official repo"""
-    
-    def __init__(self, scale_factor=2, model_name='RealESRGAN_x2plus'):
+    def __init__(self, model_name='RealESRGAN_x4plus', device='cuda'):
         """
-        Initialise l'upscaler
-        scale_factor: 2 ou 4
-        model_name: 'RealESRGAN_x2plus' ou 'RealESRGAN_x4plus'
+        Initialise l'upscaler RealESRGAN
+        
+        Args:
+            model_name: 'RealESRGAN_x2plus', 'RealESRGAN_x3plus', ou 'RealESRGAN_x4plus'
+            device: 'cuda' ou 'cpu'
         """
-        self.scale_factor = scale_factor
         self.model_name = model_name
-        self.upsampler = None
-        self.backend = None
-        
-        if not REALESRGAN_AVAILABLE:
-            print("❌ Real-ESRGAN not available")
-            print("Install: pip install realesrgan")
-            print("Fallback to Lanczos4...")
-            self.backend = 'lanczos4'
-            return
-        
-        self._init_realesrgan()
+        self.device = device
+        self.upsampler = self._init_upscaler()
 
-    def _init_realesrgan(self):
-        """Initialise Real-ESRGAN depuis le repo officiel"""
-        try:
-            print(f"🚀 Initialising Real-ESRGAN {self.model_name}...")
-            
-            # RealESRGANer from official repo
-            # Available models: RealESRGAN_x2plus, RealESRGAN_x4plus, RealESRGAN_x2, RealESRGAN_x4
-            self.upsampler = RealESRGANer(
-                scale=self.scale_factor,
-                model_path=None,  # Auto-download from official hub
-                upscaler_name=self.model_name,
-                tile=200,  # Tile size for memory efficiency
-                tile_pad=10,
-                pre_pad=0,
-                half=True  # FP16 if available
-            )
-            
-            self.backend = 'realesrgan'
-            print(f"✓ Real-ESRGAN initialised with {self.model_name}")
-            
-            # Check GPU availability
-            try:
-                import torch
-                if torch.cuda.is_available():
-                    device_name = torch.cuda.get_device_name(0)
-                    print(f"✓ GPU detected: {device_name}")
-                else:
-                    print("ℹ️  GPU not detected, using CPU (slower)")
-            except ImportError:
-                pass
-                
-        except Exception as e:
-            print(f"❌ Error initializing Real-ESRGAN: {e}")
-            print("Fallback to Lanczos4...")
-            self.backend = 'lanczos4'
+    def _init_upscaler(self):
+        """Initialise le modèle RealESRGAN"""
+        if self.model_name == 'RealESRGAN_x4plus':
+            scale = 4
+        elif self.model_name == 'RealESRGAN_x3plus':
+            scale = 3
+        elif self.model_name == 'RealESRGAN_x2plus':
+            scale = 2
+        else:
+            raise ValueError(f"Modèle inconnu: {self.model_name}")
 
-    def upscale_video(self, input_path, output_path, target_height=None):
+        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=scale)
+        
+        upsampler = RealESRGANer(
+            scale=scale,
+            model_path=f'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/{self.model_name}.pth',
+            model=model,
+            tile=400,
+            tile_pad=10,
+            pre_pad=0,
+            half=self.device == 'cuda'
+        )
+        
+        return upsampler
+
+    def upscale_frame(self, frame):
         """
-        Upscale une vidéo en gardant le ratio d'aspect
-        input_path: chemin vers la vidéo source
-        output_path: chemin vers la vidéo de sortie
-        target_height: hauteur cible (480, 720, 1080)
-        """
-        cap = cv2.VideoCapture(input_path)
+        Upscale une frame individuelle
         
-        if not cap.isOpened():
-            print(f"❌ Cannot open video: {input_path}")
-            return False
+        Args:
+            frame: numpy array (H, W, 3) en BGR
+        
+        Returns:
+            Frame upscalée (numpy array)
+        """
+        output, _ = self.upsampler.enhance(frame, outscale=1)
+        return output
 
-        # Get video properties
+    def upscale_video(self, input_video_path, output_video_path, target_resolution=None):
+        """
+        Upscale une vidéo complète
+        
+        Args:
+            input_video_path: Chemin de la vidéo d'entrée
+            output_video_path: Chemin de la vidéo de sortie
+            target_resolution: Tuple (width, height) ou None pour garder le ratio
+        """
+        # Ouverture de la vidéo
+        cap = cv2.VideoCapture(input_video_path)
+        
         fps = cap.get(cv2.CAP_PROP_FPS)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        print(f"📹 Source video: {width}x{height} @ {fps} FPS, {total_frames} frames")
-
-        # Calculate target resolution preserving aspect ratio
-        if target_height is None:
-            target_height = height * self.scale_factor
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
-        output_width, output_height = get_target_resolution(width, height, target_height)
+        print(f"Vidéo d'entrée: {original_width}x{original_height} @ {fps}fps ({frame_count} frames)")
         
-        print(f"🎯 Upscaling to {output_width}x{output_height} with {self.backend.upper()}")
-        print(f"   Aspect ratio {width}:{height} preserved")
-
-        # Create video writer
+        # Lecture première frame pour obtenir la résolution upscalée
+        ret, first_frame = cap.read()
+        if not ret:
+            raise RuntimeError("Impossible de lire la vidéo")
+        
+        upscaled_frame = self.upscale_frame(first_frame)
+        upscaled_height, upscaled_width = upscaled_frame.shape[:2]
+        
+        # Si résolution cible spécifiée, redimensionner
+        if target_resolution:
+            target_width, target_height = target_resolution
+            upscaled_frame = cv2.resize(upscaled_frame, (target_width, target_height), interpolation=cv2.INTER_LANCZOS4)
+            upscaled_width, upscaled_height = target_width, target_height
+        
+        print(f"Vidéo de sortie: {upscaled_width}x{upscaled_height} @ {fps}fps")
+        
+        # Création du writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (output_width, output_height))
-
-        if not out.isOpened():
-            print(f"❌ Cannot create output file: {output_path}")
-            cap.release()
-            return False
-
-        frame_count = 0
-        try:
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-
-                # Upscale frame
-                if self.backend == 'realesrgan':
-                    upscaled_frame = self._upscale_realesrgan(frame, output_width, output_height)
-                else:  # lanczos4 fallback
-                    upscaled_frame = cv2.resize(frame, (output_width, output_height), 
-                                               interpolation=cv2.INTER_LANCZOS4)
-
-                out.write(upscaled_frame)
-                
-                frame_count += 1
-                if frame_count % 10 == 0:
-                    progress = (frame_count / total_frames) * 100
-                    print(f"  Progress: {frame_count}/{total_frames} ({progress:.1f}%)")
-
-        finally:
-            cap.release()
-            out.release()
-
-        print(f"✓ Upscaling complete! {frame_count} frames processed")
-        return True
-    
-    def _upscale_realesrgan(self, frame, target_width, target_height):
-        """Upscale a frame with Real-ESRGAN"""
-        try:
-            # Real-ESRGAN's enhance method
-            upscaled, _ = self.upsampler.enhance(frame, outscale=self.scale_factor)
+        out = cv2.VideoWriter(output_video_path, fourcc, fps, (upscaled_width, upscaled_height))
+        
+        # Réinitialisation du capture
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        
+        frame_num = 0
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
             
-            # Ensure exact dimensions
-            if upscaled.shape[1] != target_width or upscaled.shape[0] != target_height:
-                upscaled = cv2.resize(upscaled, (target_width, target_height), 
-                                     interpolation=cv2.INTER_LANCZOS4)
+            # Upscale
+            upscaled = self.upscale_frame(frame)
             
-            return upscaled
+            # Redimensionnement si nécessaire
+            if target_resolution:
+                upscaled = cv2.resize(upscaled, (target_width, target_height), interpolation=cv2.INTER_LANCZOS4)
             
-        except Exception as e:
-            print(f"⚠️  Real-ESRGAN error: {e}")
-            print("Fallback to Lanczos4...")
-            self.backend = 'lanczos4'
-            return cv2.resize(frame, (target_width, target_height), 
-                             interpolation=cv2.INTER_LANCZOS4)
+            # Conversion en uint8 si nécessaire
+            if upscaled.dtype != np.uint8:
+                upscaled = np.clip(upscaled, 0, 255).astype(np.uint8)
+            
+            out.write(upscaled)
+            
+            frame_num += 1
+            if frame_num % 10 == 0:
+                print(f"  Upscalé {frame_num}/{frame_count} frames ({100*frame_num/frame_count:.1f}%)")
+        
+        cap.release()
+        out.release()
+        print(f"Upscaling terminé: {output_video_path}")
 
 
 def create_workflow(
@@ -297,56 +252,102 @@ def create_workflow(
         resolution=480,
         length=81
 ):
-    """Crée le workflow avec les paramètres configurables"""
+    """Crée le workflow avec les paramètres configurables - TOUJOURS 480p en sortie"""
 
     workflow = {
       "6": {
         "inputs": {
           "text": positive_prompt,
-          "clip": ["84", 0]
+          "clip": [
+            "84",
+            0
+          ]
         },
         "class_type": "CLIPTextEncode",
-        "_meta": {"title": "CLIP Text Encode (Positive Prompt)"}
+        "_meta": {
+          "title": "CLIP Text Encode (Positive Prompt)"
+        }
       },
       "7": {
         "inputs": {
           "text": negative_prompt,
-          "clip": ["84", 0]
+          "clip": [
+            "84",
+            0
+          ]
         },
         "class_type": "CLIPTextEncode",
-        "_meta": {"title": "CLIP Text Encode (Negative Prompt)"}
+        "_meta": {
+          "title": "CLIP Text Encode (Negative Prompt)"
+        }
       },
       "8": {
         "inputs": {
-          "samples": ["88", 0],
-          "vae": ["39", 0]
+          "samples": [
+            "88",
+            0
+          ],
+          "vae": [
+            "39",
+            0
+          ]
         },
         "class_type": "VAEDecode",
-        "_meta": {"title": "VAE Decode"}
+        "_meta": {
+          "title": "VAE Decode"
+        }
       },
       "39": {
-        "inputs": {"vae_name": "Wan2.1_VAE.pth"},
+        "inputs": {
+          "vae_name": "Wan2.1_VAE.pth"
+        },
         "class_type": "VAELoader",
-        "_meta": {"title": "Charger VAE"}
+        "_meta": {
+          "title": "Charger VAE"
+        }
       },
       "50": {
         "inputs": {
-          "width": ["94", 0],
-          "height": ["94", 1],
+          "width": [
+            "94",
+            0
+          ],
+          "height": [
+            "94",
+            1
+          ],
           "length": length,
           "batch_size": 1,
-          "positive": ["85", 0],
-          "negative": ["7", 0],
-          "vae": ["39", 0],
-          "start_image": ["52", 0]
+          "positive": [
+            "85",
+            0
+          ],
+          "negative": [
+            "7",
+            0
+          ],
+          "vae": [
+            "39",
+            0
+          ],
+          "start_image": [
+            "52",
+            0
+          ]
         },
         "class_type": "WanImageToVideo",
-        "_meta": {"title": "WanImageVersVidéo"}
+        "_meta": {
+          "title": "WanImageVersVidéo"
+        }
       },
       "52": {
-        "inputs": {"image": "4.png"},
+        "inputs": {
+          "image": "4.png"
+        },
         "class_type": "LoadImage",
-        "_meta": {"title": "Charger Image"}
+        "_meta": {
+          "title": "Charger Image"
+        }
       },
       "57": {
         "inputs": {
@@ -359,13 +360,27 @@ def create_workflow(
           "start_at_step": 0,
           "end_at_step": 4,
           "return_with_leftover_noise": "enable",
-          "model": ["67", 0],
-          "positive": ["50", 0],
-          "negative": ["50", 1],
-          "latent_image": ["50", 2]
+          "model": [
+            "67",
+            0
+          ],
+          "positive": [
+            "50",
+            0
+          ],
+          "negative": [
+            "50",
+            1
+          ],
+          "latent_image": [
+            "50",
+            2
+          ]
         },
         "class_type": "KSamplerAdvanced",
-        "_meta": {"title": "KSampler (Avancé)"}
+        "_meta": {
+          "title": "KSampler (Avancé)"
+        }
       },
       "58": {
         "inputs": {
@@ -378,57 +393,99 @@ def create_workflow(
           "start_at_step": 4,
           "end_at_step": 1000,
           "return_with_leftover_noise": "disable",
-          "model": ["68", 0],
-          "positive": ["50", 0],
-          "negative": ["50", 1],
-          "latent_image": ["87", 0]
+          "model": [
+            "68",
+            0
+          ],
+          "positive": [
+            "50",
+            0
+          ],
+          "negative": [
+            "50",
+            1
+          ],
+          "latent_image": [
+            "87",
+            0
+          ]
         },
         "class_type": "KSamplerAdvanced",
-        "_meta": {"title": "KSampler (Avancé)"}
+        "_meta": {
+          "title": "KSampler (Avancé)"
+        }
       },
       "61": {
-        "inputs": {"unet_name": "Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"},
+        "inputs": {
+          "unet_name": "Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"
+        },
         "class_type": "UnetLoaderGGUF",
-        "_meta": {"title": "Unet Loader (GGUF)"}
+        "_meta": {
+          "title": "Unet Loader (GGUF)"
+        }
       },
       "62": {
-        "inputs": {"unet_name": "Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"},
+        "inputs": {
+          "unet_name": "Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"
+        },
         "class_type": "UnetLoaderGGUF",
-        "_meta": {"title": "Unet Loader (GGUF)"}
+        "_meta": {
+          "title": "Unet Loader (GGUF)"
+        }
       },
       "64": {
         "inputs": {
           "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
           "strength_model": 0.9,
-          "model": ["61", 0]
+          "model": [
+            "61",
+            0
+          ]
         },
         "class_type": "LoraLoaderModelOnly",
-        "_meta": {"title": "LoraLoaderModelOnly"}
+        "_meta": {
+          "title": "LoraLoaderModelOnly"
+        }
       },
       "66": {
         "inputs": {
           "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
           "strength_model": 0.9,
-          "model": ["62", 0]
+          "model": [
+            "62",
+            0
+          ]
         },
         "class_type": "LoraLoaderModelOnly",
-        "_meta": {"title": "LoraLoaderModelOnly"}
+        "_meta": {
+          "title": "LoraLoaderModelOnly"
+        }
       },
       "67": {
         "inputs": {
           "shift": 8.000000000000002,
-          "model": ["64", 0]
+          "model": [
+            "64",
+            0
+          ]
         },
         "class_type": "ModelSamplingSD3",
-        "_meta": {"title": "ModèleÉchantillonnageSD3"}
+        "_meta": {
+          "title": "ModèleÉchantillonnageSD3"
+        }
       },
       "68": {
         "inputs": {
           "shift": 8.000000000000002,
-          "model": ["66", 0]
+          "model": [
+            "66",
+            0
+          ]
         },
         "class_type": "ModelSamplingSD3",
-        "_meta": {"title": "ModèleÉchantillonnageSD3"}
+        "_meta": {
+          "title": "ModèleÉchantillonnageSD3"
+        }
       },
       "82": {
         "inputs": {
@@ -442,10 +499,15 @@ def create_workflow(
           "trim_to_audio": False,
           "pingpong": False,
           "save_output": True,
-          "images": ["83", 0]
+          "images": [
+            "83",
+            0
+          ]
         },
         "class_type": "VHS_VideoCombine",
-        "_meta": {"title": "Video Combine 🎥🅥🅗🅢"}
+        "_meta": {
+          "title": "Video Combine 🎥🅥🅗🅢"
+        }
       },
       "83": {
         "inputs": {
@@ -455,10 +517,15 @@ def create_workflow(
           "fast_mode": True,
           "ensemble": True,
           "scale_factor": 1,
-          "frames": ["8", 0]
+          "frames": [
+            "8",
+            0
+          ]
         },
         "class_type": "RIFE VFI",
-        "_meta": {"title": "RIFE VFI (recommend rife47 and rife49)"}
+        "_meta": {
+          "title": "RIFE VFI (recommend rife47 and rife49)"
+        }
       },
       "84": {
         "inputs": {
@@ -466,62 +533,88 @@ def create_workflow(
           "type": "wan"
         },
         "class_type": "CLIPLoaderGGUF",
-        "_meta": {"title": "CLIPLoader (GGUF)"}
+        "_meta": {
+          "title": "CLIPLoader (GGUF)"
+        }
       },
       "85": {
         "inputs": {
-          "value": ["6", 0],
-          "model": ["84", 0]
+          "value": [
+            "6",
+            0
+          ],
+          "model": [
+            "84",
+            0
+          ]
         },
         "class_type": "UnloadModel",
-        "_meta": {"title": "UnloadModel"}
+        "_meta": {
+          "title": "UnloadModel"
+        }
       },
       "87": {
         "inputs": {
-          "value": ["57", 0],
-          "model": ["61", 0]
+          "value": [
+            "57",
+            0
+          ],
+          "model": [
+            "61",
+            0
+          ]
         },
         "class_type": "UnloadModel",
-        "_meta": {"title": "UnloadModel"}
+        "_meta": {
+          "title": "UnloadModel"
+        }
       },
       "88": {
         "inputs": {
-          "value": ["58", 0],
-          "model": ["62", 0]
+          "value": [
+            "58",
+            0
+          ],
+          "model": [
+            "62",
+            0
+          ]
         },
         "class_type": "UnloadModel",
-        "_meta": {"title": "UnloadModel"}
+        "_meta": {
+          "title": "UnloadModel"
+        }
       },
       "93": {
-        "inputs": {"anything": ["82", 0]},
+        "inputs": {
+          "anything": [
+            "82",
+            0
+          ]
+        },
         "class_type": "easy cleanGpuUsed",
-        "_meta": {"title": "Clean VRAM Used"}
+        "_meta": {
+          "title": "Clean VRAM Used"
+        }
       },
       "94": {
         "inputs": {
           "preset": "480p",
           "strategy": "video_mode",
           "round_to": 8,
-          "image": ["52", 0]
+          "image": [
+            "52",
+            0
+          ]
         },
         "class_type": "ResizeToPresetKeepAR",
-        "_meta": {"title": "Resize To 480p (Keep AR)"}
+        "_meta": {
+          "title": "Resize To 480p (Keep AR)"
+        }
       }
     }
 
     return workflow
-
-
-def get_target_resolution(current_width, current_height, target_height):
-    """Calcule la résolution cible en gardant le ratio d'aspect"""
-    aspect_ratio = current_width / current_height
-    target_width = int(target_height * aspect_ratio)
-    
-    # Round to multiple of 8 for codec compatibility
-    target_width = (target_width // 8) * 8
-    target_height = (target_height // 8) * 8
-    
-    return (target_width, target_height)
 
 
 def download_image_from_url(url, save_path="temp_image.png"):
@@ -533,30 +626,53 @@ def download_image_from_url(url, save_path="temp_image.png"):
                 with open(save_path, 'wb') as f:
                     f.write(image_data)
             return save_path
+
         except urllib.error.URLError as e:
-            print(f"Download failed: {e}")
-            print(f"Retrying in 3s...")
+            print(f"Tentative échouée: {e}")
+            print(f"Nouvelle tentative dans 3s...")
             time.sleep(3)
+
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            print(f"Erreur inattendue: {e}")
             return None
 
 
+def get_target_resolution(resolution_string):
+    """
+    Convertit une chaîne de résolution (ex: '720p', '1080p') en tuple (width, height)
+    """
+    resolution_map = {
+        '480p': (854, 480),
+        '540p': (960, 540),
+        '720p': (1280, 720),
+        '1080p': (1920, 1080),
+        '1440p': (2560, 1440),
+        '4k': (3840, 2160),
+    }
+    
+    if resolution_string in resolution_map:
+        return resolution_map[resolution_string]
+    else:
+        raise ValueError(f"Résolution non reconnue: {resolution_string}")
+
+
 def main():
+    # Initialisation du client
     client = ComfyUIClient()
 
-    print("🚀 Initializing upscaler...")
-    upscaler = VideoUpscaler(scale_factor=2, model_name='RealESRGAN_x2plus')
+    # Initialisation de l'upscaler (télécharge le modèle à la première utilisation)
+    print("Initialisation de RealESRGAN...")
+    upscaler = VideoUpscaler(model_name='RealESRGAN_x4plus', device='cuda')
 
     while True:
         try:
-            print("Connecting to ComfyUI...")
+            print("Connexion à ComfyUI...")
             urllib.request.urlopen(f"http://127.0.0.1:18188/object_info")
-            print("✅ Connection successful")
+            print("✅ Connexion réussie")
             break
         except Exception as e:
-            print(f"❌ Connection error: {e}")
-            print("Retrying in 2 seconds...")
+            print(f"❌ Erreur lors de la connexion à ComfyUI : {e}")
+            print("Nouvel essai dans 2 secondes...")
             time.sleep(2)
 
     while True:
@@ -578,8 +694,8 @@ def main():
                 prompt = data.get("enchanced_prompt")
                 length = data.get("length")
                 generation_id = data.get("generation_id")
-                resolution = int(data.get("resolution", 720))
-                print(f"Processing generation {generation_id}")
+                resolution = int(data.get("resolution"))
+                print(f"Processing generation {generation_id} with image_url: {image_url}, prompt: {prompt[:100]}..., length: {length}, target resolution: {resolution}")
             else:
                 print("No generation to process")
                 time.sleep(5)
@@ -589,8 +705,10 @@ def main():
             time.sleep(5)
             continue
 
-        print(f"\n📋 Creating workflow:")
-        print(f"  - Generation: 480p")
+        # Création du workflow - TOUJOURS 480p
+        print(f"Création du workflow avec les paramètres:")
+        print(f"  - Résolution source: 480p (pour la génération)")
+        print(f"  - Résolution cible: {resolution} (après upscaling)")
         print(f"  - Frames: {length}")
         print(f"  - Prompt: {prompt[:100]}...")
 
@@ -602,86 +720,91 @@ def main():
             length=length,
         )
 
-        print(f"\n⬇️  Downloading image from: {image_url}")
+        print(f"\nTéléchargement de l'image depuis: {image_url}")
         local_image_path = download_image_from_url(image_url)
 
         if not local_image_path:
-            print("❌ Image download failed.")
+            print("Échec du téléchargement de l'image. Arrêt.")
             continue
 
-        print(f"📤 Uploading image to ComfyUI...")
+        print(f"Upload de l'image vers ComfyUI...")
         upload_response = client.upload_image(local_image_path)
         uploaded_filename = upload_response.get('name', local_image_path)
-        print(f"✓ Image uploaded: {uploaded_filename}")
+        print(f"Image uploadée: {uploaded_filename}")
 
+        # Mise à jour du workflow avec le nom du fichier uploadé
         workflow['52']['inputs']['image'] = uploaded_filename
 
-        print("\n📨 Sending workflow to ComfyUI...")
+        # Envoi du workflow
+        print("\nEnvoi du workflow à ComfyUI...")
         response = client.queue_prompt(workflow)
         prompt_id = response['prompt_id']
-        print(f"✓ Workflow queued with ID: {prompt_id}")
+        print(f"Workflow en queue avec ID: {prompt_id}")
 
-        print("⏳ Generation in progress...")
+        # Attente de la complétion
+        print("Génération en cours... (cela peut prendre plusieurs minutes)")
         result = client.wait_for_completion(prompt_id)
 
-        print("\n✓ Generation complete!")
+        print("\n✓ Génération ComfyUI terminée!")
 
+        # Récupération et traitement de la vidéo générée
         if 'outputs' in result and '82' in result['outputs']:
             videos = result['outputs']['82'].get('gifs', [])
             for video in videos:
                 filename = video['filename']
                 subfolder = video.get('subfolder', '')
-                video_path = f"/workspace/ComfyUI/output/{subfolder}/{filename}" if subfolder else f"/workspace/ComfyUI/output/{filename}"
+                input_video_path = f"/workspace/ComfyUI/output/{subfolder}/{filename}" if subfolder else f"/workspace/ComfyUI/output/{filename}"
                 
-                print(f"\n✓ Video generated: {filename}")
+                print(f"✓ Vidéo générée: {filename}")
+                print(f"  Emplacement: {input_video_path}")
 
-                if resolution > 480:
-                    print(f"\n🎬 Upscaling: 480p → {resolution}p")
-                    upscaled_video_path = video_path.replace('.mp4', f'_upscaled_{resolution}p.mp4')
-                    
-                    success = upscaler.upscale_video(video_path, upscaled_video_path, target_height=resolution)
-                    
-                    if success:
-                        print(f"✓ Upscaling successful!")
-                        video_to_upload = upscaled_video_path
-                    else:
-                        print(f"⚠️  Upscaling failed, using 480p version")
-                        video_to_upload = video_path
-                else:
-                    video_to_upload = video_path
-                    print(f"ℹ️  No upscaling needed (already 480p)")
-
-                print(f"\n📤 Uploading video...")
+                # Upscaling de la vidéo
                 try:
-                    with open(video_to_upload, "rb") as f:
+                    target_res = get_target_resolution(resolution)
+                    output_video_path = input_video_path.replace('.mp4', '_upscaled.mp4')
+                    
+                    print(f"\nDémarrage de l'upscaling vers {resolution}...")
+                    upscaler.upscale_video(input_video_path, output_video_path, target_resolution=target_res)
+                    print(f"✓ Upscaling terminé!")
+                    
+                except Exception as e:
+                    print(f"Erreur lors de l'upscaling: {e}")
+                    output_video_path = input_video_path
+
+                # Upload de la vidéo upscalée
+                try:
+                    with open(output_video_path, "rb") as f:
                         r = requests.post(
                             "https://cdn.liroai.com/upload.php",
                             headers=headers,
-                            files={"file": (Path(video_to_upload).name, f)}
+                            files={"file": (output_video_path, f)}
                         )
                     r.raise_for_status()
                     data = r.json()
-                    print("✓ File URL:", data["url"])
+                    print("Lien du fichier:", data["url"])
                     
+                    # Mise à jour de l'API avec le lien de la vidéo
                     update_response = requests.post(
                         "https://api.liroai.com/v1/generation/finished",
                         headers=headers,
                         data={"generation_id": generation_id, "result_url": data["url"]}
                     )
-                    
+                    print(update_response)
                     if update_response.status_code == 200:
-                        print("✓ API updated successfully")
+                        print("API mise à jour avec succès")
                     else:
-                        print("❌ API update failed:", update_response.text)
-                        
-                except Exception as e:
-                    print(f"❌ Upload error: {e}")
-
+                        print("Échec de la mise à jour de l'API:", update_response.text)
+                except requests.exceptions.RequestException as e:
+                    print("Erreur réseau ou HTTP:", e)
+                except ValueError:
+                    print("La réponse n'était pas du JSON valide")
         else:
-            print("❌ No video found in results")
+            print("Aucune vidéo trouvée dans les résultats")
 
+        # Nettoyage
         if os.path.exists(local_image_path):
             os.remove(local_image_path)
+            print(f"\nFichier temporaire nettoyé: {local_image_path}")
 
 
 if __name__ == "__main__":
