@@ -638,7 +638,7 @@ def main():
                 prompt = data.get("enchanced_prompt")
                 length = data.get("length")
                 generation_id = data.get("generation_id")
-                resolution = data.get("resolution", 720)
+                resolution = int(data.get("resolution", 720))
                 print(f"Processing generation {generation_id} with image_url: {image_url}, prompt: {prompt[:100]}..., length: {length}, target resolution: {resolution}p")
             else:
                 print("No generation to process")
