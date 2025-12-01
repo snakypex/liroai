@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-ComfyUI Video Upscaler - BSRGAN Edition
-Utilise le modèle BSRGAN (léger et haute qualité)
+ComfyUI Video Upscaler - Real-ESRGAN Official Repo Edition
+Uses the actively maintained Real-ESRGAN repository directly
+https://github.com/xinntao/Real-ESRGAN
 """
 
 import json
@@ -11,6 +12,8 @@ import uuid
 import time
 import io
 import os
+import sys
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -21,17 +24,18 @@ import numpy as np
 
 from requests import Timeout
 
-# Essayer d'importer BSRGAN
-BSRGAN_AVAILABLE = False
+# Try to import Real-ESRGAN from official repo
+REALESRGAN_AVAILABLE = False
+INFERENCE_ENGINE = None
+
 try:
-    import torch
-    from basicsr.archs.rrdbnet_arch import RRDBNet
     from realesrgan import RealESRGANer
-    BSRGAN_AVAILABLE = True
-    print("✓ Real-ESRGAN/BSRGAN disponible")
-except ImportError as e:
-    print(f"ℹ️  Real-ESRGAN non disponible, installation recommandée")
-    print(f"    pip install basicsr realesrgan")
+    REALESRGAN_AVAILABLE = True
+    INFERENCE_ENGINE = 'realesrgan'
+    print("✓ Real-ESRGAN official repo detected")
+except ImportError:
+    print("ℹ️  Real-ESRGAN not found")
+    print("Install with: pip install realesrgan")
 
 
 class ComfyUIClient:
@@ -140,53 +144,62 @@ class ComfyUIClient:
 
 
 class VideoUpscaler:
-    """Upscaler vidéo haute qualité avec BSRGAN/Real-ESRGAN"""
+    """Upscaler vidéo haute qualité avec Real-ESRGAN official repo"""
     
-    def __init__(self, scale_factor=2):
-        """Initialise l'upscaler"""
+    def __init__(self, scale_factor=2, model_name='RealESRGAN_x2plus'):
+        """
+        Initialise l'upscaler
+        scale_factor: 2 ou 4
+        model_name: 'RealESRGAN_x2plus' ou 'RealESRGAN_x4plus'
+        """
         self.scale_factor = scale_factor
-        self.backend = None
+        self.model_name = model_name
         self.upsampler = None
+        self.backend = None
         
-        if BSRGAN_AVAILABLE:
-            self._init_bsrgan()
-        else:
-            print("⚠️  Real-ESRGAN non disponible")
-            print("Installation recommandée pour meilleure qualité:")
-            print("  pip install basicsr realesrgan")
-            print("\nUtilisation du fallback Lanczos4...")
+        if not REALESRGAN_AVAILABLE:
+            print("❌ Real-ESRGAN not available")
+            print("Install: pip install realesrgan")
+            print("Fallback to Lanczos4...")
             self.backend = 'lanczos4'
+            return
+        
+        self._init_realesrgan()
 
-    def _init_bsrgan(self):
-        """Initialise Real-ESRGAN avec modèle BSRGAN"""
+    def _init_realesrgan(self):
+        """Initialise Real-ESRGAN depuis le repo officiel"""
         try:
-            # BSRGAN est plus léger et plus rapide que RealESRGAN
-            model_name = 'BSRGANx2'  # ou 'RealESRGAN_x2plus' pour meilleure qualité
+            print(f"🚀 Initialising Real-ESRGAN {self.model_name}...")
             
-            print(f"🚀 Initialisation de {model_name}...")
-            
+            # RealESRGANer from official repo
+            # Available models: RealESRGAN_x2plus, RealESRGAN_x4plus, RealESRGAN_x2, RealESRGAN_x4
             self.upsampler = RealESRGANer(
                 scale=self.scale_factor,
-                model_path=None,  # Auto-download
-                upscaler_name=model_name,
-                tile=200,  # Tile size pour économiser VRAM
+                model_path=None,  # Auto-download from official hub
+                upscaler_name=self.model_name,
+                tile=200,  # Tile size for memory efficiency
                 tile_pad=10,
                 pre_pad=0,
-                half=True  # FP16 si disponible
+                half=True  # FP16 if available
             )
             
-            self.backend = 'bsrgan'
-            print(f"✓ {model_name} initialisé (scale={self.scale_factor}x)")
+            self.backend = 'realesrgan'
+            print(f"✓ Real-ESRGAN initialised with {self.model_name}")
             
-            # Vérifier GPU
-            if torch.cuda.is_available():
-                print(f"✓ GPU détecté: {torch.cuda.get_device_name()}")
-            else:
-                print("ℹ️  GPU non détecté, utilisation du CPU")
+            # Check GPU availability
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    device_name = torch.cuda.get_device_name(0)
+                    print(f"✓ GPU detected: {device_name}")
+                else:
+                    print("ℹ️  GPU not detected, using CPU (slower)")
+            except ImportError:
+                pass
                 
         except Exception as e:
-            print(f"❌ Erreur lors de l'initialisation de BSRGAN: {e}")
-            print("Fallback Lanczos4...")
+            print(f"❌ Error initializing Real-ESRGAN: {e}")
+            print("Fallback to Lanczos4...")
             self.backend = 'lanczos4'
 
     def upscale_video(self, input_path, output_path, target_height=None):
@@ -199,32 +212,32 @@ class VideoUpscaler:
         cap = cv2.VideoCapture(input_path)
         
         if not cap.isOpened():
-            print(f"❌ Impossible d'ouvrir la vidéo: {input_path}")
+            print(f"❌ Cannot open video: {input_path}")
             return False
 
-        # Récupération des propriétés
+        # Get video properties
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        print(f"📹 Vidéo source: {width}x{height} @ {fps} FPS, {total_frames} frames")
+        print(f"📹 Source video: {width}x{height} @ {fps} FPS, {total_frames} frames")
 
-        # Calcul de la résolution cible en gardant le ratio
+        # Calculate target resolution preserving aspect ratio
         if target_height is None:
             target_height = height * self.scale_factor
         
         output_width, output_height = get_target_resolution(width, height, target_height)
         
-        print(f"🎯 Upscaling vers {output_width}x{output_height} avec {self.backend.upper()}")
-        print(f"   Ratio {width}:{height} préservé")
+        print(f"🎯 Upscaling to {output_width}x{output_height} with {self.backend.upper()}")
+        print(f"   Aspect ratio {width}:{height} preserved")
 
-        # Définir le codec et créer le VideoWriter
+        # Create video writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(output_path, fourcc, fps, (output_width, output_height))
 
         if not out.isOpened():
-            print(f"❌ Impossible de créer le fichier de sortie: {output_path}")
+            print(f"❌ Cannot create output file: {output_path}")
             cap.release()
             return False
 
@@ -235,10 +248,10 @@ class VideoUpscaler:
                 if not ret:
                     break
 
-                # Upscale du frame
-                if self.backend == 'bsrgan':
-                    upscaled_frame = self._upscale_bsrgan(frame, output_width, output_height)
-                else:  # lanczos4
+                # Upscale frame
+                if self.backend == 'realesrgan':
+                    upscaled_frame = self._upscale_realesrgan(frame, output_width, output_height)
+                else:  # lanczos4 fallback
                     upscaled_frame = cv2.resize(frame, (output_width, output_height), 
                                                interpolation=cv2.INTER_LANCZOS4)
 
@@ -247,22 +260,22 @@ class VideoUpscaler:
                 frame_count += 1
                 if frame_count % 10 == 0:
                     progress = (frame_count / total_frames) * 100
-                    print(f"  Progression: {frame_count}/{total_frames} ({progress:.1f}%)")
+                    print(f"  Progress: {frame_count}/{total_frames} ({progress:.1f}%)")
 
         finally:
             cap.release()
             out.release()
 
-        print(f"✓ Upscaling terminé! {frame_count} frames traités")
+        print(f"✓ Upscaling complete! {frame_count} frames processed")
         return True
     
-    def _upscale_bsrgan(self, frame, target_width, target_height):
-        """Upscale un frame avec BSRGAN"""
+    def _upscale_realesrgan(self, frame, target_width, target_height):
+        """Upscale a frame with Real-ESRGAN"""
         try:
-            # BSRGAN utilise enhance()
+            # Real-ESRGAN's enhance method
             upscaled, _ = self.upsampler.enhance(frame, outscale=self.scale_factor)
             
-            # Assurer les dimensions exactes
+            # Ensure exact dimensions
             if upscaled.shape[1] != target_width or upscaled.shape[0] != target_height:
                 upscaled = cv2.resize(upscaled, (target_width, target_height), 
                                      interpolation=cv2.INTER_LANCZOS4)
@@ -270,8 +283,8 @@ class VideoUpscaler:
             return upscaled
             
         except Exception as e:
-            print(f"⚠️  Erreur BSRGAN: {e}")
-            print("Fallback à Lanczos4...")
+            print(f"⚠️  Real-ESRGAN error: {e}")
+            print("Fallback to Lanczos4...")
             self.backend = 'lanczos4'
             return cv2.resize(frame, (target_width, target_height), 
                              interpolation=cv2.INTER_LANCZOS4)
@@ -504,7 +517,7 @@ def get_target_resolution(current_width, current_height, target_height):
     aspect_ratio = current_width / current_height
     target_width = int(target_height * aspect_ratio)
     
-    # Arrondir à un multiple de 8
+    # Round to multiple of 8 for codec compatibility
     target_width = (target_width // 8) * 8
     target_height = (target_height // 8) * 8
     
@@ -521,29 +534,29 @@ def download_image_from_url(url, save_path="temp_image.png"):
                     f.write(image_data)
             return save_path
         except urllib.error.URLError as e:
-            print(f"Tentative échouée: {e}")
-            print(f"Nouvelle tentative dans 3s...")
+            print(f"Download failed: {e}")
+            print(f"Retrying in 3s...")
             time.sleep(3)
         except Exception as e:
-            print(f"Erreur inattendue: {e}")
+            print(f"Unexpected error: {e}")
             return None
 
 
 def main():
     client = ComfyUIClient()
 
-    print("🚀 Initialisation de l'upscaler...")
-    upscaler = VideoUpscaler(scale_factor=2)
+    print("🚀 Initializing upscaler...")
+    upscaler = VideoUpscaler(scale_factor=2, model_name='RealESRGAN_x2plus')
 
     while True:
         try:
-            print("Connexion à ComfyUI...")
+            print("Connecting to ComfyUI...")
             urllib.request.urlopen(f"http://127.0.0.1:18188/object_info")
-            print("✅ Connexion réussie")
+            print("✅ Connection successful")
             break
         except Exception as e:
-            print(f"❌ Erreur lors de la connexion à ComfyUI : {e}")
-            print("Nouvel essai dans 2 secondes...")
+            print(f"❌ Connection error: {e}")
+            print("Retrying in 2 seconds...")
             time.sleep(2)
 
     while True:
@@ -576,8 +589,8 @@ def main():
             time.sleep(5)
             continue
 
-        print(f"\n📋 Création du workflow:")
-        print(f"  - Génération: 480p")
+        print(f"\n📋 Creating workflow:")
+        print(f"  - Generation: 480p")
         print(f"  - Frames: {length}")
         print(f"  - Prompt: {prompt[:100]}...")
 
@@ -589,29 +602,29 @@ def main():
             length=length,
         )
 
-        print(f"\n⬇️  Téléchargement de l'image depuis: {image_url}")
+        print(f"\n⬇️  Downloading image from: {image_url}")
         local_image_path = download_image_from_url(image_url)
 
         if not local_image_path:
-            print("❌ Échec du téléchargement de l'image.")
+            print("❌ Image download failed.")
             continue
 
-        print(f"📤 Upload de l'image vers ComfyUI...")
+        print(f"📤 Uploading image to ComfyUI...")
         upload_response = client.upload_image(local_image_path)
         uploaded_filename = upload_response.get('name', local_image_path)
-        print(f"✓ Image uploadée: {uploaded_filename}")
+        print(f"✓ Image uploaded: {uploaded_filename}")
 
         workflow['52']['inputs']['image'] = uploaded_filename
 
-        print("\n📨 Envoi du workflow à ComfyUI...")
+        print("\n📨 Sending workflow to ComfyUI...")
         response = client.queue_prompt(workflow)
         prompt_id = response['prompt_id']
-        print(f"✓ Workflow en queue avec ID: {prompt_id}")
+        print(f"✓ Workflow queued with ID: {prompt_id}")
 
-        print("⏳ Génération en cours...")
+        print("⏳ Generation in progress...")
         result = client.wait_for_completion(prompt_id)
 
-        print("\n✓ Génération terminée!")
+        print("\n✓ Generation complete!")
 
         if 'outputs' in result and '82' in result['outputs']:
             videos = result['outputs']['82'].get('gifs', [])
@@ -620,7 +633,7 @@ def main():
                 subfolder = video.get('subfolder', '')
                 video_path = f"/workspace/ComfyUI/output/{subfolder}/{filename}" if subfolder else f"/workspace/ComfyUI/output/{filename}"
                 
-                print(f"\n✓ Vidéo générée: {filename}")
+                print(f"\n✓ Video generated: {filename}")
 
                 if resolution > 480:
                     print(f"\n🎬 Upscaling: 480p → {resolution}p")
@@ -629,16 +642,16 @@ def main():
                     success = upscaler.upscale_video(video_path, upscaled_video_path, target_height=resolution)
                     
                     if success:
-                        print(f"✓ Upscaling réussi!")
+                        print(f"✓ Upscaling successful!")
                         video_to_upload = upscaled_video_path
                     else:
-                        print(f"⚠️  Upscaling échoué, utilisation de la version 480p")
+                        print(f"⚠️  Upscaling failed, using 480p version")
                         video_to_upload = video_path
                 else:
                     video_to_upload = video_path
-                    print(f"ℹ️  Pas d'upscaling (déjà 480p)")
+                    print(f"ℹ️  No upscaling needed (already 480p)")
 
-                print(f"\n📤 Upload de la vidéo...")
+                print(f"\n📤 Uploading video...")
                 try:
                     with open(video_to_upload, "rb") as f:
                         r = requests.post(
@@ -648,7 +661,7 @@ def main():
                         )
                     r.raise_for_status()
                     data = r.json()
-                    print("✓ URL:", data["url"])
+                    print("✓ File URL:", data["url"])
                     
                     update_response = requests.post(
                         "https://api.liroai.com/v1/generation/finished",
@@ -657,15 +670,15 @@ def main():
                     )
                     
                     if update_response.status_code == 200:
-                        print("✓ API mise à jour")
+                        print("✓ API updated successfully")
                     else:
-                        print("❌ Erreur API:", update_response.text)
+                        print("❌ API update failed:", update_response.text)
                         
                 except Exception as e:
-                    print(f"❌ Erreur upload: {e}")
+                    print(f"❌ Upload error: {e}")
 
         else:
-            print("❌ Aucune vidéo trouvée")
+            print("❌ No video found in results")
 
         if os.path.exists(local_image_path):
             os.remove(local_image_path)
