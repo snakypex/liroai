@@ -650,7 +650,7 @@ def get_target_resolution(resolution_string, original_width, original_height):
         - Vidéo 1080x1920 (9:16) avec '720' → (405, 720)
         - Vidéo 1080x1080 (1:1) avec '720' → (720, 720)
     """
-    # Résolutions de référence (hauteur cible en pixels)
+    # Résolutions de référence (résolution par défaut en pixels)
     resolution_map = {
         '480': 480,
         '540': 540,
@@ -663,13 +663,18 @@ def get_target_resolution(resolution_string, original_width, original_height):
     if resolution_string not in resolution_map:
         raise ValueError(f"Résolution non reconnue: {resolution_string}")
     
-    target_height = resolution_map[resolution_string]
+    target_res = resolution_map[resolution_string]
     
     # Calcul du ratio d'aspect original
     aspect_ratio = original_width / original_height
     
-    # Calcul de la largeur en fonction du ratio d'aspect
-    target_width = int(target_height * aspect_ratio)
+    # Déterminer quelle dimension utiliser comme référence
+    if aspect_ratio >= 1:  # Vidéo horizontale ou carrée (largeur >= hauteur)
+        target_width = target_res
+        target_height = int(target_res / aspect_ratio)
+    else:  # Vidéo verticale (hauteur > largeur)
+        target_height = target_res
+        target_width = int(target_res * aspect_ratio)
     
     # Arrondir à un multiple de 8 pour compatibilité avec les codecs vidéo
     target_width = (target_width // 8) * 8
