@@ -635,6 +635,7 @@ def get_target_resolution(resolution_string, original_width, original_height):
     Convertit une chaîne de résolution (ex: '720p', '1080p') en tuple (width, height)
     en gardant le ratio d'aspect de la vidéo originale.
     
+    La résolution cible correspond à la PLUS PETITE dimension (dimension contraignante).
     Supporte les vidéos horizontales (16:9), verticales (9:16) et carrées (1:1).
     
     Args:
@@ -643,14 +644,14 @@ def get_target_resolution(resolution_string, original_width, original_height):
         original_height: Hauteur de la vidéo originale en pixels
     
     Returns:
-        Tuple (width, height) avec le ratio d'aspect préservé
+        Tuple (width, height) avec le ratio d'aspect préservé et la plus petite dimension = resolution_string
     
     Exemples:
-        - Vidéo 1920x1080 (16:9) avec '720' → (1280, 720)
-        - Vidéo 1080x1920 (9:16) avec '720' → (405, 720)
-        - Vidéo 1080x1080 (1:1) avec '720' → (720, 720)
+        - Vidéo 1920x1080 (16:9) avec '720' → (1280, 720) - hauteur = 720 (plus petite)
+        - Vidéo 1080x1920 (9:16) avec '720' → (720, 1280) - largeur = 720 (plus petite)
+        - Vidéo 1080x1080 (1:1) avec '720' → (720, 720) - les deux = 720
     """
-    # Résolutions de référence (résolution par défaut en pixels)
+    # Résolutions de référence en pixels
     resolution_map = {
         '480': 480,
         '540': 540,
@@ -663,18 +664,20 @@ def get_target_resolution(resolution_string, original_width, original_height):
     if resolution_string not in resolution_map:
         raise ValueError(f"Résolution non reconnue: {resolution_string}")
     
-    target_res = resolution_map[resolution_string]
+    target_min_size = resolution_map[resolution_string]
     
     # Calcul du ratio d'aspect original
     aspect_ratio = original_width / original_height
     
-    # Déterminer quelle dimension utiliser comme référence
+    # La résolution cible s'applique à la plus petite dimension
     if aspect_ratio >= 1:  # Vidéo horizontale ou carrée (largeur >= hauteur)
-        target_width = target_res
-        target_height = int(target_res / aspect_ratio)
+        # La hauteur est la plus petite dimension
+        target_height = target_min_size
+        target_width = int(target_min_size * aspect_ratio)
     else:  # Vidéo verticale (hauteur > largeur)
-        target_height = target_res
-        target_width = int(target_res * aspect_ratio)
+        # La largeur est la plus petite dimension
+        target_width = target_min_size
+        target_height = int(target_min_size / aspect_ratio)
     
     # Arrondir à un multiple de 8 pour compatibilité avec les codecs vidéo
     target_width = (target_width // 8) * 8
