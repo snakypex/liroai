@@ -139,20 +139,13 @@ class VideoUpscaler:
 
     def _init_upscaler(self):
         """Initialise le modèle RealESRGAN"""
-        if self.model_name == 'RealESRGAN_x4plus':
-            scale = 4
-        elif self.model_name == 'RealESRGAN_x3plus':
-            scale = 3
-        elif self.model_name == 'RealESRGAN_x2plus':
-            scale = 2
-        else:
-            raise ValueError(f"Modèle inconnu: {self.model_name}")
+        scale = 2
 
         model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=scale)
         
         upsampler = RealESRGANer(
             scale=scale,
-            model_path=f'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/{self.model_name}.pth',
+            model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
             model=model,
             tile=400,
             tile_pad=10,
