@@ -482,7 +482,7 @@ def create_workflow(
       },
       "82": {
         "inputs": {
-          "frame_rate": 24,
+          "frame_rate": 60,
           "loop_count": 0,
           "filename_prefix": f"{datetime.now().strftime('%Y%m%d_%H%M%S')}/liro_{int(time.time())}",
           "format": "video/h264-mp4",
@@ -506,7 +506,7 @@ def create_workflow(
         "inputs": {
           "ckpt_name": "rife47.pth",
           "clear_cache_after_n_frames": 10,
-          "multiplier": 2,
+          "multiplier": 3.75,
           "fast_mode": True,
           "ensemble": True,
           "scale_factor": 1,
