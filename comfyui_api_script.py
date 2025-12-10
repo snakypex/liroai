@@ -429,7 +429,7 @@ def create_workflow(
       "64": {
         "inputs": {
           "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
-          "strength_model": 0.9,
+          "strength_model": 0,
           "model": [
             "61",
             0
