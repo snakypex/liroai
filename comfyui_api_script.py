@@ -506,7 +506,7 @@ def create_workflow(
         "inputs": {
           "ckpt_name": "rife47.pth",
           "clear_cache_after_n_frames": 10,
-          "multiplier": 3.75,
+          "multiplier": 2.5,
           "fast_mode": True,
           "ensemble": True,
           "scale_factor": 1,
