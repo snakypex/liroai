@@ -220,7 +220,7 @@ class VideoUpscaler:
             upscaled = self.upscale_frame(frame)
             
             # Redimensionnement si nécessaire
-            if target_:
+            if target_resolution:
                 upscaled = cv2.resize(upscaled, (target_width, target_height), interpolation=cv2.INTER_LANCZOS4)
             
             # Conversion en uint8 si nécessaire
