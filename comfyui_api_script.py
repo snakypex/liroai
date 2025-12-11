@@ -592,7 +592,7 @@ def create_workflow(
       },
       "94": {
         "inputs": {
-          "preset": "480p",
+          "preset": f"{resolution}p",
           "strategy": "video_mode",
           "round_to": 8,
           "image": [
