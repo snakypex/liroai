@@ -168,14 +168,14 @@ class VideoUpscaler:
         output, _ = self.upsampler.enhance(frame, outscale=1)
         return output
 
-    def upscale_video(self, input_video_path, output_video_path, target_resolution=None):
+    def upscale_video(self, input_video_path, output_video_path, target_=None):
         """
         Upscale une vidéo complète
         
         Args:
             input_video_path: Chemin de la vidéo d'entrée
             output_video_path: Chemin de la vidéo de sortie
-            target_resolution: Tuple (width, height) ou None pour garder le ratio
+            target_: Tuple (width, height) ou None pour garder le ratio
         """
         # Ouverture de la vidéo
         cap = cv2.VideoCapture(input_video_path)
@@ -196,8 +196,8 @@ class VideoUpscaler:
         upscaled_height, upscaled_width = upscaled_frame.shape[:2]
         
         # Si résolution cible spécifiée, redimensionner
-        if target_resolution:
-            target_width, target_height = target_resolution
+        if target_:
+            target_width, target_height = target_
             upscaled_frame = cv2.resize(upscaled_frame, (target_width, target_height), interpolation=cv2.INTER_LANCZOS4)
             upscaled_width, upscaled_height = target_width, target_height
         
@@ -220,7 +220,7 @@ class VideoUpscaler:
             upscaled = self.upscale_frame(frame)
             
             # Redimensionnement si nécessaire
-            if target_resolution:
+            if target_:
                 upscaled = cv2.resize(upscaled, (target_width, target_height), interpolation=cv2.INTER_LANCZOS4)
             
             # Conversion en uint8 si nécessaire
@@ -242,7 +242,7 @@ def create_workflow(
         positive_prompt,
         negative_prompt,
         input_image="4.png",
-        resolution=480,
+        =480,
         length=81
 ):
     """Crée le workflow avec les paramètres configurables - TOUJOURS 480p en sortie"""
@@ -592,7 +592,7 @@ def create_workflow(
       },
       "94": {
         "inputs": {
-          "preset": f"{resolution}p",
+          "preset": f"480p",
           "strategy": "video_mode",
           "round_to": 8,
           "image": [
@@ -803,8 +803,7 @@ def main():
                     output_video_path = input_video_path.replace('.mp4', '_upscaled.mp4')
                     
                     print(f"\nDémarrage de l'upscaling vers {resolution}p...")
-                    #upscaler.upscale_video(input_video_path, output_video_path, target_resolution=target_res)
-                    output_video_path = input_video_path
+                    upscaler.upscale_video(input_video_path, output_video_path, target_resolution=target_res)
                     print(f"✓ Upscaling terminé!")
                     
                 except Exception as e:
