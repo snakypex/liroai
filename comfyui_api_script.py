@@ -242,10 +242,9 @@ def create_workflow(
         positive_prompt,
         negative_prompt,
         input_image="4.png",
-        =480,
+        resolution=480,
         length=81
 ):
-    """Crée le workflow avec les paramètres configurables - TOUJOURS 480p en sortie"""
 
     workflow = {
       "6": {
@@ -592,7 +591,7 @@ def create_workflow(
       },
       "94": {
         "inputs": {
-          "preset": f"480p",
+          "preset": f"{resolution}p",
           "strategy": "video_mode",
           "round_to": 8,
           "image": [
