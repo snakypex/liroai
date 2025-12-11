@@ -168,7 +168,7 @@ class VideoUpscaler:
         output, _ = self.upsampler.enhance(frame, outscale=1)
         return output
 
-    def upscale_video(self, input_video_path, output_video_path, target_=None):
+    def upscale_video(self, input_video_path, output_video_path, target_resolution=None):
         """
         Upscale une vidéo complète
         
@@ -196,8 +196,8 @@ class VideoUpscaler:
         upscaled_height, upscaled_width = upscaled_frame.shape[:2]
         
         # Si résolution cible spécifiée, redimensionner
-        if target_:
-            target_width, target_height = target_
+        if target_resolution:
+            target_width, target_height = target_resolution
             upscaled_frame = cv2.resize(upscaled_frame, (target_width, target_height), interpolation=cv2.INTER_LANCZOS4)
             upscaled_width, upscaled_height = target_width, target_height
         
