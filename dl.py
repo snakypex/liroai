@@ -20,14 +20,14 @@ from huggingface_hub import hf_hub_download, login
 ASSETS: List[Dict[str, str]] = [
     # Diffusion (High/Low noise)
     {
-        "repo_id": "QuantStack/Wan2.2-I2V-A14B-GGUF",
-        "filename": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf",
-        "dest_rel": r"models/diffusion_models/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf",
+        "repo_id": "TurboDiffusion/TurboWan2.2-I2V-A14B-720P",
+        "filename": "TurboWan2.2-I2V-A14B-high-720P-quant.pth",
+        "dest_rel": r"models/diffusion_models/TurboWan2.2-I2V-A14B-high-720P-quant.pth",
     },
     {
-        "repo_id": "QuantStack/Wan2.2-I2V-A14B-GGUF",
-        "filename": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf",
-        "dest_rel": r"models/diffusion_models/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf",
+        "repo_id": "TurboDiffusion/TurboWan2.2-I2V-A14B-720P",
+        "filename": "TurboWan2.2-I2V-A14B-low-720P-quant.pth",
+        "dest_rel": r"models/diffusion_models/TurboWan2.2-I2V-A14B-low-720P-quant.pth",
     },
     # Text encoder
     {
@@ -136,3 +136,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
