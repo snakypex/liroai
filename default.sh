@@ -77,11 +77,17 @@ CLIP_MODELS=(
 ### FONCTIONS ###
 
 function provisioning_start() {
+    curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     provisioning_print_header
+    curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     provisioning_get_apt_packages
+    curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     provisioning_get_pip_packages
+    curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     provisioning_get_nodes
+    curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     provisioning_get_snk_node
+    curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     
     # --- TÉLÉCHARGEMENT DES MODÈLES ---
     # Mode: "parallel" pour téléchargement parallèle, "sequential" pour séquentiel
@@ -89,25 +95,45 @@ function provisioning_start() {
     
     if [[ "$DOWNLOAD_MODE" == "parallel" ]]; then
         printf "\n🚀 Mode téléchargement PARALLÈLE activé (3 simultanés)\n"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/checkpoints" "${CHECKPOINT_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/unet" "${UNET_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/lora" "${LORA_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/controlnet" "${CONTROLNET_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/vae" "${VAE_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/upscale_models" "${ESRGAN_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/diffusion_models" "${DIFFUSION_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/clip" "${CLIP_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     else
         printf "\n📥 Mode téléchargement SÉQUENTIEL\n"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/checkpoints" "${CHECKPOINT_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/unet" "${UNET_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/lora" "${LORA_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/controlnet" "${CONTROLNET_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/vae" "${VAE_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/upscale_models" "${ESRGAN_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/diffusion_models" "${DIFFUSION_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_get_files "${MODELS_DIR}/clip" "${CLIP_MODELS[@]}"
+        curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
     fi
+
+    curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "is_active=1" &&
     
     provisioning_print_end
 }
