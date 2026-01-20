@@ -1,0 +1,191 @@
+{
+  "1": {
+    "inputs": {
+      "model_name": "TurboWan2.2-I2V-A14B-high-720P-quant.pth",
+      "attention_type": "sla",
+      "sla_topk": 0.1,
+      "offload_mode": "layerwise_gpu"
+    },
+    "class_type": "TurboWanModelLoader",
+    "_meta": {
+      "title": "Load High Noise Model"
+    }
+  },
+  "2": {
+    "inputs": {
+      "model_name": "TurboWan2.2-I2V-A14B-low-720P-quant.pth",
+      "attention_type": "sla",
+      "sla_topk": 0.1,
+      "offload_mode": "layerwise_gpu"
+    },
+    "class_type": "TurboWanModelLoader",
+    "_meta": {
+      "title": "Load Low Noise Model"
+    }
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP (umT5 Text Encoder)"
+    }
+  },
+  "4": {
+    "inputs": {
+      "text": "{{positive_prompt}}",
+      "clip": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive Prompt"
+    }
+  },
+  "6": {
+    "inputs": {
+      "image": "54ca3547f4d4ed4eed8dd59e.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Start Image"
+    }
+  },
+  "7": {
+    "inputs": {
+      "num_frames": {{length}},
+      "num_steps": 4,
+      "resolution": "custom",
+      "aspect_ratio": "1:1",
+      "boundary": 0.6,
+      "sigma_max": 200,
+      "seed": 42,
+      "use_ode": false,
+      "width": [
+        "11",
+        0
+      ],
+      "height": [
+        "11",
+        1
+      ],
+      "high_noise_model": [
+        "1",
+        0
+      ],
+      "low_noise_model": [
+        "2",
+        0
+      ],
+      "conditioning": [
+        "4",
+        0
+      ],
+      "vae": [
+        "9",
+        0
+      ],
+      "image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "TurboDiffusionI2VSampler",
+    "_meta": {
+      "title": "TurboDiffusion I2V Sampler"
+    }
+  },
+  "9": {
+    "inputs": {
+      "vae_name": "Wan2.1_VAE.pth"
+    },
+    "class_type": "TurboWanVAELoader",
+    "_meta": {
+      "title": "TurboWan VAE Loader"
+    }
+  },
+  "11": {
+    "inputs": {
+      "preset": "1080p",
+      "round_to": 8,
+      "image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "ResolutionFromImagePreset",
+    "_meta": {
+      "title": "Resolution From Image (480p/540p/720p)"
+    }
+  },
+  "12": {
+    "inputs": {
+      "ckpt_name": "rife47.pth",
+      "clear_cache_after_n_frames": 30,
+      "multiplier": 5,
+      "fast_mode": true,
+      "ensemble": false,
+      "scale_factor": 1,
+      "frames": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "RIFE VFI",
+    "_meta": {
+      "title": "RIFE VFI (recommend rife47 and rife49)"
+    }
+  },
+  "13": {
+    "inputs": {
+      "frame_rate": 60,
+      "loop_count": 0,
+      "filename_prefix": "TurboWan",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 15,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "15": {
+    "inputs": {
+      "upscale_model": [
+        "16",
+        0
+      ],
+      "image": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "Agrandir l'Image (à l'aide du Modèle)"
+    }
+  },
+  "16": {
+    "inputs": {
+      "model_name": "RealESRGAN_x2.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "Charger le modèle de mise à l'échelle"
+    }
+  }
+}
