@@ -1,25 +1,34 @@
 #!/bin/bash
 
 source /venv/main/bin/activate
-COMFYUI_DIR=${WORKSPACE}/ComfyUI
+COMFYUI_DIR=${WORKSPACE:-$(pwd)}/ComfyUI
+MODELS_DIR="${COMFYUI_DIR}/models"
+NODES_DIR="${COMFYUI_DIR}/custom_nodes"
 
-# Packages are installed after nodes so we can fix them...
+# --- CONFIGURATION ---
 
 APT_PACKAGES=(
     #"package-1"
     #"package-2"
 )
 
+# Combinaison des packages pip des deux scripts
 PIP_PACKAGES=(
-    #"package-1"
-    #"package-2"
+    "einops"
+    "loguru"
+    "omegaconf"
+    "pandas"
+    "imageio"
+    "nvidia-ml-py"
+    "imageio-ffmpeg"
+    "requests"
 )
 
+# Combinaison des nodes des deux scripts
 NODES=(
     "https://github.com/anveshane/Comfyui_turbodiffusion"
     "https://github.com/kijai/ComfyUI-WanVideoWrapper"
     "https://github.com/city96/ComfyUI-GGUF"
-    "https://github.com/comfyanonymous/ComfyUI"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
     "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation"
     "https://github.com/yolain/ComfyUI-Easy-Use"
@@ -28,8 +37,10 @@ NODES=(
     "https://github.com/princepainter/Comfyui-PainterFLF2V"
 )
 
-WORKFLOWS=(
+# URL du node Snakypex (fichier Python seul)
+SNK_NODE_URL="https://raw.githubusercontent.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p/refs/heads/main/comfy_ui_node_output_width_height_for_480_p_or_720_p.py"
 
+WORKFLOWS=(
 )
 
 CHECKPOINT_MODELS=(
@@ -42,80 +53,134 @@ LORA_MODELS=(
 )
 
 VAE_MODELS=(
+    "https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B/resolve/main/Wan2.1_VAE.pth"
 )
 
 ESRGAN_MODELS=(
+    "https://huggingface.co/ai-forever/Real-ESRGAN/resolve/main/RealESRGAN_x2.pth"
 )
 
 CONTROLNET_MODELS=(
 )
 
-### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
+# Modèles spécifiques pour diffusion_models (TurboWan)
+DIFFUSION_MODELS=(
+    "https://huggingface.co/TurboDiffusion/TurboWan2.2-I2V-A14B-720P/resolve/main/TurboWan2.2-I2V-A14B-high-720P-quant.pth"
+    "https://huggingface.co/TurboDiffusion/TurboWan2.2-I2V-A14B-720P/resolve/main/TurboWan2.2-I2V-A14B-low-720P-quant.pth"
+)
+
+# Modèles CLIP/Text Encoders
+CLIP_MODELS=(
+    "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+)
+
+### FONCTIONS ###
 
 function provisioning_start() {
     provisioning_print_header
     provisioning_get_apt_packages
-    provisioning_get_nodes
     provisioning_get_pip_packages
-    provisioning_get_files \
-        "${COMFYUI_DIR}/models/checkpoints" \
-        "${CHECKPOINT_MODELS[@]}"
-    provisioning_get_files \
-        "${COMFYUI_DIR}/models/unet" \
-        "${UNET_MODELS[@]}"
-    provisioning_get_files \
-        "${COMFYUI_DIR}/models/lora" \
-        "${LORA_MODELS[@]}"
-    provisioning_get_files \
-        "${COMFYUI_DIR}/models/controlnet" \
-        "${CONTROLNET_MODELS[@]}"
-    provisioning_get_files \
-        "${COMFYUI_DIR}/models/vae" \
-        "${VAE_MODELS[@]}"
-    provisioning_get_files \
-        "${COMFYUI_DIR}/models/esrgan" \
-        "${ESRGAN_MODELS[@]}"
+    provisioning_get_nodes
+    provisioning_get_snk_node
+    
+    # --- TÉLÉCHARGEMENT DES MODÈLES ---
+    # Mode: "parallel" pour téléchargement parallèle, "sequential" pour séquentiel
+    local DOWNLOAD_MODE="${DOWNLOAD_MODE:-parallel}"
+    
+    if [[ "$DOWNLOAD_MODE" == "parallel" ]]; then
+        printf "\n🚀 Mode téléchargement PARALLÈLE activé (3 simultanés)\n"
+        provisioning_download_parallel "${MODELS_DIR}/checkpoints" "${CHECKPOINT_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/unet" "${UNET_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/lora" "${LORA_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/controlnet" "${CONTROLNET_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/vae" "${VAE_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/upscale_models" "${ESRGAN_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/diffusion_models" "${DIFFUSION_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/clip" "${CLIP_MODELS[@]}"
+    else
+        printf "\n📥 Mode téléchargement SÉQUENTIEL\n"
+        provisioning_get_files "${MODELS_DIR}/checkpoints" "${CHECKPOINT_MODELS[@]}"
+        provisioning_get_files "${MODELS_DIR}/unet" "${UNET_MODELS[@]}"
+        provisioning_get_files "${MODELS_DIR}/lora" "${LORA_MODELS[@]}"
+        provisioning_get_files "${MODELS_DIR}/controlnet" "${CONTROLNET_MODELS[@]}"
+        provisioning_get_files "${MODELS_DIR}/vae" "${VAE_MODELS[@]}"
+        provisioning_get_files "${MODELS_DIR}/upscale_models" "${ESRGAN_MODELS[@]}"
+        provisioning_get_files "${MODELS_DIR}/diffusion_models" "${DIFFUSION_MODELS[@]}"
+        provisioning_get_files "${MODELS_DIR}/clip" "${CLIP_MODELS[@]}"
+    fi
+    
     provisioning_print_end
 }
 
 function provisioning_get_apt_packages() {
     if [[ -n $APT_PACKAGES ]]; then
-            sudo $APT_INSTALL ${APT_PACKAGES[@]}
+        printf "📦 Installation des paquets APT...\n"
+        sudo $APT_INSTALL ${APT_PACKAGES[@]}
     fi
 }
 
 function provisioning_get_pip_packages() {
     if [[ -n $PIP_PACKAGES ]]; then
-            pip install --no-cache-dir ${PIP_PACKAGES[@]}
+        printf "📦 Installation/Mise à jour des paquets pip: %s\n" "${PIP_PACKAGES[*]}"
+        pip install --no-cache-dir ${PIP_PACKAGES[@]}
     fi
-    #Sage Attention
-    pip install git+https://github.com/thu-ml/SpargeAttn.git --no-build-isolation
+    
+    # Sage Attention - nécessite CUDA toolkit pour compiler
+    printf "📦 Installation de SageAttention...\n"
+    
+    # Méthode 1: Essayer le package pré-compilé sageattention (plus simple)
+    if pip install sageattention 2>/dev/null; then
+        printf "✅ SageAttention installé via pip\n"
+    else
+        # Méthode 2: Compiler depuis source (nécessite CUDA toolkit)
+        printf "⚠️ Package pré-compilé non disponible, tentative de compilation...\n"
+        if command -v nvcc &> /dev/null; then
+            pip install git+https://github.com/thu-ml/SageAttention.git --no-build-isolation 2>/dev/null || \
+            printf "⚠️ Échec installation SageAttention - continuera sans (optionnel)\n"
+        else
+            printf "⚠️ CUDA toolkit (nvcc) non trouvé - SageAttention ignoré (optionnel)\n"
+        fi
+    fi
 }
 
 function provisioning_get_nodes() {
+    printf "\n--- INSTALLATION DES NODES ---\n"
     for repo in "${NODES[@]}"; do
         dir="${repo##*/}"
-        path="${COMFYUI_DIR}/custom_nodes/${dir}"
+        # Enlever .git si présent
+        dir="${dir%.git}"
+        path="${NODES_DIR}/${dir}"
         requirements="${path}/requirements.txt"
         if [[ -d $path ]]; then
             if [[ ${AUTO_UPDATE,,} != "false" ]]; then
-                printf "Updating node: %s...\n" "${repo}"
+                printf "🔄 Mise à jour du node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                   pip install --no-cache-dir -r "$requirements"
+                    printf "🔎 Requirements trouvés pour %s\n" "${dir}"
+                    pip install --no-cache-dir -r "$requirements"
                 fi
             fi
         else
-            printf "Downloading node: %s...\n" "${repo}"
+            printf "📥 Téléchargement du node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
+                printf "🔎 Requirements trouvés pour %s\n" "${dir}"
                 pip install --no-cache-dir -r "${requirements}"
             fi
         fi
     done
-    # Télécharger le fichier comfy_ui_node_output_width_height_for_480_p_or_720_p.py
-    printf "Downloading additional node: comfy_ui_node_output_width_height_for_480_p_or_720_p.py...\n"
-    curl -L -o "${COMFYUI_DIR}/custom_nodes/comfy_ui_node_output_width_height_for_480_p_or_720_p.py" "https://raw.githubusercontent.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p/refs/heads/main/comfy_ui_node_output_width_height_for_480_p_or_720_p.py"
+}
+
+function provisioning_get_snk_node() {
+    # Télécharger le fichier Python du node Snakypex séparément
+    local snk_path="${NODES_DIR}/comfy_ui_res_node.py"
+    if [[ ! -f "$snk_path" ]]; then
+        printf "📥 Téléchargement du node Snakypex (fichier Python)...\n"
+        curl -L -o "$snk_path" "$SNK_NODE_URL"
+        printf "✨ Node Snakypex téléchargé\n"
+    else
+        printf "✅ Node Snakypex déjà présent\n"
+    fi
 }
 
 function provisioning_get_files() {
@@ -125,20 +190,37 @@ function provisioning_get_files() {
     mkdir -p "$dir"
     shift
     arr=("$@")
-    printf "Downloading %s model(s) to %s...\n" "${#arr[@]}" "$dir"
+    printf "\n📥 Téléchargement de %s modèle(s) vers %s...\n" "${#arr[@]}" "$dir"
     for url in "${arr[@]}"; do
-        printf "Downloading: %s\n" "${url}"
+        local filename="${url##*/}"
+        local filepath="${dir}/${filename}"
+        
+        # Vérifier si le fichier existe déjà
+        if [[ -f "$filepath" ]]; then
+            printf "✅ Déjà présent: %s\n" "${filename}"
+            continue
+        fi
+        
+        printf "📥 Téléchargement: %s\n" "${filename}"
         provisioning_download "${url}" "${dir}"
-        printf "\n"
+        printf "✨ Terminé: %s\n" "${filename}"
     done
 }
 
 function provisioning_print_header() {
-    printf "\n##############################################\n#                                            #\n#          Provisioning container            #\n#                                            #\n#         This will take some time           #\n#                                            #\n# Your container will be ready on completion #\n#                                            #\n##############################################\n\n"
+    printf "\n##############################################\n"
+    printf "#                                            #\n"
+    printf "#          Provisioning container            #\n"
+    printf "#                                            #\n"
+    printf "#         This will take some time           #\n"
+    printf "#                                            #\n"
+    printf "# Your container will be ready on completion #\n"
+    printf "#                                            #\n"
+    printf "##############################################\n\n"
 }
 
 function provisioning_print_end() {
-    printf "\nProvisioning complete:  Application will start now\n\n"
+    printf "\n✨ Provisioning terminé: L'application va démarrer maintenant\n\n"
 }
 
 function provisioning_has_valid_hf_token() {
@@ -149,7 +231,6 @@ function provisioning_has_valid_hf_token() {
         -H "Authorization: Bearer $HF_TOKEN" \
         -H "Content-Type: application/json")
 
-    # Check if the token is valid
     if [ "$response" -eq 200 ]; then
         return 0
     else
@@ -165,7 +246,6 @@ function provisioning_has_valid_civitai_token() {
         -H "Authorization: Bearer $CIVITAI_TOKEN" \
         -H "Content-Type: application/json")
 
-    # Check if the token is valid
     if [ "$response" -eq 200 ]; then
         return 0
     else
@@ -173,22 +253,69 @@ function provisioning_has_valid_civitai_token() {
     fi
 }
 
-# Download from $1 URL to $2 file path
+# Download from $1 URL to $2 directory
 function provisioning_download() {
+    local auth_token=""
+    
     if [[ -n $HF_TOKEN && $1 =~ ^https://([a-zA-Z0-9_-]+\.)?huggingface\.co(/|$|\?) ]]; then
         auth_token="$HF_TOKEN"
-    elif 
-        [[ -n $CIVITAI_TOKEN && $1 =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.com(/|$|\?) ]]; then
+    elif [[ -n $CIVITAI_TOKEN && $1 =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.com(/|$|\?) ]]; then
         auth_token="$CIVITAI_TOKEN"
     fi
-    if [[ -n $auth_token ]];then
+    
+    if [[ -n $auth_token ]]; then
         wget --header="Authorization: Bearer $auth_token" -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$2" "$1"
     else
         wget -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$2" "$1"
     fi
 }
 
-# Allow user to disable provisioning if they started with a script they didn't want
+# Fonction pour téléchargement parallèle (utilise xargs avec 3 workers)
+function provisioning_download_parallel() {
+    local dir="$1"
+    shift
+    local urls=("$@")
+    
+    if [[ ${#urls[@]} -eq 0 ]]; then return 1; fi
+    
+    mkdir -p "$dir"
+    printf "📥 Téléchargement parallèle de %s fichier(s) vers %s...\n" "${#urls[@]}" "$dir"
+    
+    # Exporter les tokens pour les sous-processus
+    export HF_TOKEN CIVITAI_TOKEN
+    
+    # Utiliser xargs pour paralléliser (3 téléchargements simultanés)
+    printf '%s\n' "${urls[@]}" | xargs -P 3 -I {} bash -c '
+        url="{}"
+        filename="${url##*/}"
+        filepath="'"$dir"'/${filename}"
+        
+        if [[ -f "$filepath" ]]; then
+            echo "✅ Déjà présent: ${filename}"
+            exit 0
+        fi
+        
+        # Déterminer le token d authentification
+        auth_header=""
+        if [[ -n "$HF_TOKEN" && "$url" =~ ^https://([a-zA-Z0-9_-]+\.)?huggingface\.co(/|$|\?) ]]; then
+            auth_header="--header=Authorization: Bearer $HF_TOKEN"
+        elif [[ -n "$CIVITAI_TOKEN" && "$url" =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.com(/|$|\?) ]]; then
+            auth_header="--header=Authorization: Bearer $CIVITAI_TOKEN"
+        fi
+        
+        echo "📥 Téléchargement: ${filename}"
+        if [[ -n "$auth_header" ]]; then
+            wget "$auth_header" -qnc --content-disposition --show-progress -e dotbytes=4M -P "'"$dir"'" "$url"
+        else
+            wget -qnc --content-disposition --show-progress -e dotbytes=4M -P "'"$dir"'" "$url"
+        fi
+        echo "✨ Terminé: ${filename}"
+    '
+}
+
+### MAIN ###
+
+# Permettre à l'utilisateur de désactiver le provisioning
 if [[ ! -f /.noprovisioning ]]; then
     provisioning_start
 fi
