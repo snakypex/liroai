@@ -49,7 +49,7 @@
   },
   "6": {
     "inputs": {
-      "image": "54ca3547f4d4ed4eed8dd59e.png"
+      "image": "{{input_image}}"
     },
     "class_type": "LoadImage",
     "_meta": {
