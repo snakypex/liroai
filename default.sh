@@ -16,6 +16,7 @@ PIP_PACKAGES=(
 )
 
 NODES=(
+    "https://github.com/anveshane/Comfyui_turbodiffusion"
     "https://github.com/kijai/ComfyUI-WanVideoWrapper"
     "https://github.com/city96/ComfyUI-GGUF"
     "https://github.com/comfyanonymous/ComfyUI"
