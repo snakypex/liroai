@@ -88,6 +88,8 @@ function provisioning_get_pip_packages() {
     if [[ -n $PIP_PACKAGES ]]; then
             pip install --no-cache-dir ${PIP_PACKAGES[@]}
     fi
+    #Sage Attention
+    pip install git+https://github.com/thu-ml/SpargeAttn.git --no-build-isolation
 }
 
 function provisioning_get_nodes() {
