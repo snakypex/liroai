@@ -62,7 +62,7 @@
       "num_steps": 4,
       "resolution": "custom",
       "aspect_ratio": "1:1",
-      "boundary": 0.6,
+      "boundary": 0.8,
       "sigma_max": 200,
       "seed": 42,
       "use_ode": false,
