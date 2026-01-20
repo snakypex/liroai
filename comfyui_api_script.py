@@ -345,12 +345,12 @@ def create_workflow(
         "inputs": {
           "add_noise": "enable",
           "noise_seed": 868,
-          "steps": 7,
+          "steps": 4,
           "cfg": 4,
           "sampler_name": "euler",
           "scheduler": "beta",
           "start_at_step": 0,
-          "end_at_step": 4,
+          "end_at_step": 3,
           "return_with_leftover_noise": "enable",
           "model": [
             "67",
@@ -378,11 +378,11 @@ def create_workflow(
         "inputs": {
           "add_noise": "disable",
           "noise_seed": 0,
-          "steps": 7,
+          "steps": 4,
           "cfg": 1,
           "sampler_name": "euler",
           "scheduler": "beta",
-          "start_at_step": 4,
+          "start_at_step": 3,
           "end_at_step": 1000,
           "return_with_leftover_noise": "disable",
           "model": [
@@ -407,28 +407,24 @@ def create_workflow(
           "title": "KSampler (Avancé)"
         }
       },
-"61": {
-  "inputs": {
-    "model_name": "TurboWan2.2-I2V-A14B-high-720P-quant.pth",
-    "attention_type": "sla",
-    "sla_topk": 0.1
-  },
-  "class_type": "TurboWanModelLoader",
-  "_meta": {
-    "title": "Load High Noise Model"
-  }
-},
-"62": {
-  "inputs": {
-    "model_name": "TurboWan2.2-I2V-A14B-low-720P-quant.pth",
-    "attention_type": "sla",
-    "sla_topk": 0.1
-  },
-  "class_type": "TurboWanModelLoader",
-  "_meta": {
-    "title": "Load Low Noise Model"
-  }
-},
+      "61": {
+        "inputs": {
+          "unet_name": "Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"
+        },
+        "class_type": "UnetLoaderGGUF",
+        "_meta": {
+          "title": "Unet Loader (GGUF)"
+        }
+      },
+      "62": {
+        "inputs": {
+          "unet_name": "Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"
+        },
+        "class_type": "UnetLoaderGGUF",
+        "_meta": {
+          "title": "Unet Loader (GGUF)"
+        }
+      },
       "64": {
         "inputs": {
           "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
