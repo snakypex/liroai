@@ -111,6 +111,11 @@ class ComfyUIClient:
             return False
 
 
+def escape_json_string(s: str) -> str:
+    """Échappe une chaîne pour l'insertion dans du JSON."""
+    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+
+
 def load_workflow(
     positive_prompt: str,
     negative_prompt: str = DEFAULT_NEGATIVE_PROMPT,
@@ -126,14 +131,14 @@ def load_workflow(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename_prefix = f"{timestamp}/liro_{int(time.time())}"
 
-    # Substituer les placeholders sur le texte brut
+    # Substituer les placeholders sur le texte brut (avec échappement JSON)
     replacements = {
-        "{{positive_prompt}}": positive_prompt,
-        "{{negative_prompt}}": negative_prompt,
-        "{{input_image}}": input_image,
+        "{{positive_prompt}}": escape_json_string(positive_prompt),
+        "{{negative_prompt}}": escape_json_string(negative_prompt),
+        "{{input_image}}": escape_json_string(input_image),
         "{{length}}": str(length),
         "{{resolution}}": f"{resolution}p",
-        "{{filename_prefix}}": filename_prefix,
+        "{{filename_prefix}}": escape_json_string(filename_prefix),
     }
 
     for placeholder, value in replacements.items():
@@ -222,8 +227,11 @@ def process_generation(client: ComfyUIClient, generation: dict, headers: dict) -
         return False
 
     # Upload vers ComfyUI
-    upload_result_data = client.upload_image(temp_image)
-    uploaded_name = upload_result_data.get("name", temp_image)
+    upload_response = client.upload_image(temp_image)
+    uploaded_name = upload_response.get("name")
+    if not uploaded_name:
+        print(f"Erreur upload, réponse: {upload_response}")
+        return False
     print(f"Image uploadée: {uploaded_name}")
 
     # Créer et envoyer le workflow
@@ -243,9 +251,21 @@ def process_generation(client: ComfyUIClient, generation: dict, headers: dict) -
     result = client.wait_for_completion(prompt_id)
     print("Génération terminée!")
 
-    # Récupérer la vidéo
-    outputs = result.get("outputs", {}).get("82", {})
-    videos = outputs.get("gifs", [])
+    # Récupérer la vidéo (chercher dans tous les outputs)
+    outputs = result.get("outputs", {})
+    videos = []
+    
+    for node_id, node_output in outputs.items():
+        # Chercher les vidéos dans 'gifs' ou 'videos'
+        for key in ("gifs", "videos"):
+            if key in node_output:
+                for video in node_output[key]:
+                    video["_node_id"] = node_id
+                    videos.append(video)
+
+    if not videos:
+        print("Aucune vidéo trouvée dans les outputs")
+        return False
 
     success = False
     for video in videos:
@@ -253,7 +273,7 @@ def process_generation(client: ComfyUIClient, generation: dict, headers: dict) -
         subfolder = video.get("subfolder", "")
         video_path = Path(COMFYUI_OUTPUT_DIR) / subfolder / filename if subfolder else Path(COMFYUI_OUTPUT_DIR) / filename
 
-        print(f"Vidéo générée: {video_path}")
+        print(f"Vidéo générée (nœud {video.get('_node_id', '?')}): {video_path}")
 
         if upload_result(str(video_path), generation_id, headers):
             print("API mise à jour avec succès")
