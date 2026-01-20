@@ -127,7 +127,7 @@
     "inputs": {
       "ckpt_name": "rife47.pth",
       "clear_cache_after_n_frames": 30,
-      "multiplier": 5,
+      "multiplier": 3,
       "fast_mode": true,
       "ensemble": false,
       "scale_factor": 1,
