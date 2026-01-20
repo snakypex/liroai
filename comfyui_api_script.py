@@ -20,7 +20,7 @@ COMFYUI_ADDRESS = "127.0.0.1:18188"
 COMFYUI_OUTPUT_DIR = "/workspace/ComfyUI/output"
 LIRO_API_URL = "https://api.liroai.com/v1/generation"
 LIRO_CDN_URL = "https://cdn.liroai.com/upload.php"
-WORKFLOW_FILE = Path(__file__).parent / "workflow.json"
+WORKFLOW_FILE = Path(__file__).parent / "workflow.txt"
 
 DEFAULT_NEGATIVE_PROMPT = (
     "色调艳丽,过曝,静态,细节模糊不清,字幕,风格,作品,画作,画面,静止,整体发灰,"
@@ -118,28 +118,28 @@ def load_workflow(
     resolution: int = 720,
     length: int = 81,
 ) -> dict:
-    """Charge et paramètre le workflow depuis le fichier JSON."""
+    """Charge et paramètre le workflow depuis le fichier texte."""
     with open(WORKFLOW_FILE) as f:
-        workflow = json.load(f)
+        workflow_str = f.read()
 
     # Générer un préfixe unique pour le fichier de sortie
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename_prefix = f"{timestamp}/liro_{int(time.time())}"
 
-    # Substituer les placeholders
+    # Substituer les placeholders sur le texte brut
     replacements = {
         "{{positive_prompt}}": positive_prompt,
         "{{negative_prompt}}": negative_prompt,
         "{{input_image}}": input_image,
-        "{{length}}": length,
+        "{{length}}": str(length),
         "{{resolution}}": f"{resolution}p",
         "{{filename_prefix}}": filename_prefix,
     }
 
-    workflow_str = json.dumps(workflow)
     for placeholder, value in replacements.items():
-        workflow_str = workflow_str.replace(placeholder, str(value))
+        workflow_str = workflow_str.replace(placeholder, value)
 
+    # Parser en JSON uniquement après les remplacements
     return json.loads(workflow_str)
 
 
