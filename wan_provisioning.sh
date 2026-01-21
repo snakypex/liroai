@@ -26,7 +26,6 @@ PIP_PACKAGES=(
 
 # Combinaison des nodes des deux scripts
 NODES=(
-    "https://github.com/anveshane/Comfyui_turbodiffusion"
     "https://github.com/kijai/ComfyUI-WanVideoWrapper"
     "https://github.com/city96/ComfyUI-GGUF"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
@@ -50,6 +49,8 @@ UNET_MODELS=(
 )
 
 LORA_MODELS=(
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/6eebf7bf9d1c964b87074e4aa823faba98b793c2/LoRAs/Wan22-Lightning/Wan22_A14B_T2V_LOW_Lightning_4steps_lora_250928_rank64_fp16.safetensors"
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/6eebf7bf9d1c964b87074e4aa823faba98b793c2/LoRAs/Wan22-Lightning/Wan22_A14B_T2V_HIGH_Lightning_4steps_lora_250928_rank128_fp16.safetensors"
 )
 
 VAE_MODELS=(
@@ -65,13 +66,13 @@ CONTROLNET_MODELS=(
 
 # Modèles spécifiques pour diffusion_models (TurboWan)
 DIFFUSION_MODELS=(
-    "https://huggingface.co/TurboDiffusion/TurboWan2.2-I2V-A14B-720P/resolve/main/TurboWan2.2-I2V-A14B-high-720P-quant.pth"
-    "https://huggingface.co/TurboDiffusion/TurboWan2.2-I2V-A14B-720P/resolve/main/TurboWan2.2-I2V-A14B-low-720P-quant.pth"
+    "https://huggingface.co/QuantStack/Wan2.2-I2V-A14B-GGUF/resolve/main/HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"
+    "https://huggingface.co/QuantStack/Wan2.2-I2V-A14B-GGUF/resolve/main/LowNoise/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"
 )
 
 # Modèles CLIP/Text Encoders
 CLIP_MODELS=(
-    "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+    "https://huggingface.co/city96/umt5-xxl-encoder-gguf/resolve/main/umt5-xxl-encoder-Q8_0.gguf"
 )
 
 ### FONCTIONS ###
