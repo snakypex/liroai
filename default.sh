@@ -346,17 +346,13 @@ if [[ ! -f /.noprovisioning ]]; then
     provisioning_start
 fi
 
-# Lance le bloc dans un sous-shell non bloquant
-(
-  # Activation du venv
-  source /venv/main/bin/activate
+source /venv/main/bin/activate
 
-  cd /workspace/ &&
-  wget -O script.py "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/comfyui_api_script.py" &&
+cd /workspace/
+wget -O script.py "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/comfyui_api_script.py"
 
-  wget -O workflow.txt "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/turbowan_workflow_api.txt" &&
+wget -O workflow.txt "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/turbowan_workflow_api.txt"
   
-  touch finish.finish &&
+touch finish.finish &&
 
-  python script.py
-) 2>&1 | tee log.log &
+python script.py &&
