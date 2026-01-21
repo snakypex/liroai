@@ -1,7 +1,7 @@
 {
       "6": {
         "inputs": {
-          "text": positive_prompt,
+          "text": "{{positive_prompt}}",
           "clip": [
             "84",
             0
@@ -14,7 +14,7 @@
       },
       "7": {
         "inputs": {
-          "text": negative_prompt,
+          "text": "{{negative_prompt}}",
           "clip": [
             "84",
             0
@@ -60,7 +60,7 @@
             "94",
             1
           ],
-          "length": length,
+          "length": 88,
           "batch_size": 1,
           "positive": [
             "85",
@@ -86,7 +86,7 @@
       },
       "52": {
         "inputs": {
-          "image": "4.png"
+          "image": "{{input_image}}"
         },
         "class_type": "LoadImage",
         "_meta": {
@@ -235,7 +235,7 @@
         "inputs": {
           "frame_rate": 60,
           "loop_count": 0,
-          "filename_prefix": f"{datetime.now().strftime('%Y%m%d_%H%M%S')}/liro_{int(time.time())}",
+          "filename_prefix": "{{filename_prefix}}",
           "format": "video/h264-mp4",
           "pix_fmt": "yuv420p",
           "crf": 15,
@@ -256,7 +256,7 @@
       "83": {
         "inputs": {
           "ckpt_name": "rife47.pth",
-          "clear_cache_after_n_frames": 10,
+          "clear_cache_after_n_frames": 30,
           "multiplier": 5,
           "fast_mode": True,
           "ensemble": True,
@@ -343,7 +343,7 @@
       },
       "94": {
         "inputs": {
-          "preset": f"{resolution}p",
+          "preset": "480p",
           "strategy": "video_mode",
           "round_to": 8,
           "image": [
