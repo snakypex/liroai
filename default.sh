@@ -353,6 +353,8 @@ wget -O script.py "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/
 
 wget -O workflow.txt "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/turbowan_workflow_api.txt"
   
-touch finish.finish &&
+touch finish.finish
 
-python script.py &&
+nohup python script.py >/workspace/python.log 2>&1 &
+disown
+exit 0
