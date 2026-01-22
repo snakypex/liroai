@@ -110,18 +110,19 @@
     }
   },
   "11": {
-    "inputs": {
-      "preset": "1080p",
-      "round_to": 8,
-      "image": [
-        "6",
-        0
-      ]
-    },
-    "class_type": "ResolutionFromImagePreset",
-    "_meta": {
-      "title": "Resolution From Image (480p/540p/720p)"
-    }
+      "inputs": {
+          "preset": "720p",
+          "strategy": "video_mode",
+          "round_to": 8,
+          "image": [
+            "6",
+            0
+          ]
+        },
+        "class_type": "ResizeToPresetKeepAR",
+        "_meta": {
+          "title": "Resize To 480p (Keep AR)"
+        }
   },
   "12": {
     "inputs": {
