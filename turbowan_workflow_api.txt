@@ -111,7 +111,7 @@
   },
   "11": {
       "inputs": {
-          "preset": "720p",
+          "preset": "480p",
           "strategy": "video_mode",
           "round_to": 8,
           "image": [
