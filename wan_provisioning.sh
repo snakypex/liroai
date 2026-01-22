@@ -49,8 +49,8 @@ UNET_MODELS=(
 )
 
 LORA_MODELS=(
-    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/6eebf7bf9d1c964b87074e4aa823faba98b793c2/LoRAs/Wan22-Lightning/Wan22_A14B_T2V_LOW_Lightning_4steps_lora_250928_rank64_fp16.safetensors"
-    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/6eebf7bf9d1c964b87074e4aa823faba98b793c2/LoRAs/Wan22-Lightning/Wan22_A14B_T2V_HIGH_Lightning_4steps_lora_250928_rank128_fp16.safetensors"
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Wan22-Lightning/old/Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors"
+    "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/LoRAs/Wan22-Lightning/old/Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors"
 )
 
 VAE_MODELS=(
