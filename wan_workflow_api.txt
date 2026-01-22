@@ -60,7 +60,7 @@
             "94",
             1
           ],
-          "length": 88,
+          "length": 81,
           "batch_size": 1,
           "positive": [
             "85",
