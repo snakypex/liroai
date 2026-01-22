@@ -72,7 +72,7 @@ DIFFUSION_MODELS=(
 
 # Modèles CLIP/Text Encoders
 CLIP_MODELS=(
-    "https://huggingface.co/city96/umt5-xxl-encoder-gguf/resolve/main/umt5-xxl-encoder-Q8_0.gguf"
+    "https://huggingface.co/city96/umt5-xxl-encoder-gguf/resolve/main/umt5-xxl-encoder-Q5_K_M.gguf"
 )
 
 ### FONCTIONS ###
