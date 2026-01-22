@@ -101,7 +101,7 @@ function provisioning_start() {
         curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/unet" "${UNET_MODELS[@]}"
         curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
-        provisioning_download_parallel "${MODELS_DIR}/lora" "${LORA_MODELS[@]}"
+        provisioning_download_parallel "${MODELS_DIR}/loras" "${LORA_MODELS[@]}"
         curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
         provisioning_download_parallel "${MODELS_DIR}/controlnet" "${CONTROLNET_MODELS[@]}"
         curl -X POST https://api.liroai.com/v1/instance/update -H "Authorization: Bearer $LIRO_TOKEN" -d "last_ping=$(date '+%Y-%m-%d %H:%M:%S')"
