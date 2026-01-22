@@ -343,7 +343,7 @@
       },
       "94": {
         "inputs": {
-          "preset": "480p",
+          "preset": "1080p",
           "strategy": "video_mode",
           "round_to": 8,
           "image": [
