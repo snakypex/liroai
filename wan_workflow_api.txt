@@ -98,11 +98,11 @@
           "add_noise": "enable",
           "noise_seed": 868,
           "steps": 4,
-          "cfg": 4,
+          "cfg": 1,
           "sampler_name": "euler",
           "scheduler": "beta",
           "start_at_step": 0,
-          "end_at_step": 3,
+          "end_at_step": 2,
           "return_with_leftover_noise": "enable",
           "model": [
             "67",
@@ -134,7 +134,7 @@
           "cfg": 1,
           "sampler_name": "euler",
           "scheduler": "beta",
-          "start_at_step": 3,
+          "start_at_step": 2,
           "end_at_step": 1000,
           "return_with_leftover_noise": "disable",
           "model": [
