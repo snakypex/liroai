@@ -256,7 +256,7 @@
       "83": {
         "inputs": {
           "ckpt_name": "rife47.pth",
-          "clear_cache_after_n_frames": 30,
+          "clear_cache_after_n_frames": 500,
           "multiplier": 5,
           "fast_mode": true,
           "ensemble": true,
