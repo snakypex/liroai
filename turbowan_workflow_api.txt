@@ -1,21 +1,9 @@
 {
-  "1": {
-    "inputs": {
-      "model_name": "TurboWan2.2-I2V-A14B-high-720P-quant.pth",
-      "attention_type": "sla",
-      "sla_topk": 0.1,
-      "offload_mode": "layerwise_gpu"
-    },
-    "class_type": "TurboWanModelLoader",
-    "_meta": {
-      "title": "Load High Noise Model"
-    }
-  },
   "2": {
     "inputs": {
       "model_name": "TurboWan2.2-I2V-A14B-low-720P-quant.pth",
       "attention_type": "sla",
-      "sla_topk": 0.1,
+      "sla_topk": 0.2,
       "offload_mode": "layerwise_gpu"
     },
     "class_type": "TurboWanModelLoader",
@@ -62,20 +50,20 @@
       "num_steps": 4,
       "resolution": "custom",
       "aspect_ratio": "1:1",
-      "boundary": 0.8,
-      "sigma_max": 200,
+      "boundary": 0.6,
+      "sigma_max": 500,
       "seed": 42,
       "use_ode": false,
       "width": [
-        "11",
+        "17",
         0
       ],
       "height": [
-        "11",
+        "17",
         1
       ],
       "high_noise_model": [
-        "1",
+        "19",
         0
       ],
       "low_noise_model": [
@@ -109,31 +97,16 @@
       "title": "TurboWan VAE Loader"
     }
   },
-  "11": {
-      "inputs": {
-          "preset": "720p",
-          "strategy": "video_mode",
-          "round_to": 8,
-          "image": [
-            "6",
-            0
-          ]
-        },
-        "class_type": "ResizeToPresetKeepAR",
-        "_meta": {
-          "title": "Resize To 480p (Keep AR)"
-        }
-  },
   "12": {
     "inputs": {
       "ckpt_name": "rife47.pth",
-      "clear_cache_after_n_frames": 30,
+      "clear_cache_after_n_frames": 1000,
       "multiplier": 3,
       "fast_mode": true,
-      "ensemble": false,
+      "ensemble": true,
       "scale_factor": 1,
       "frames": [
-        "15",
+        "7",
         0
       ]
     },
@@ -164,29 +137,63 @@
       "title": "Video Combine 🎥🅥🅗🅢"
     }
   },
-  "15": {
+  "17": {
     "inputs": {
-      "upscale_model": [
-        "16",
-        0
-      ],
+      "preset": "720p",
+      "strategy": "video_mode",
+      "round_to": 8,
       "image": [
-        "7",
+        "6",
         0
       ]
     },
-    "class_type": "ImageUpscaleWithModel",
+    "class_type": "ResizeToPresetKeepAR",
     "_meta": {
-      "title": "Agrandir l'Image (à l'aide du Modèle)"
+      "title": "Resize To 480p/540p/720p (Keep AR)"
     }
   },
-  "16": {
+  "19": {
     "inputs": {
-      "model_name": "RealESRGAN_x2.pth"
+      "model_name": "TurboWan2.2-I2V-A14B-high-720P-quant.pth",
+      "attention_type": "sla",
+      "sla_topk": 0.2,
+      "offload_mode": "layerwise_gpu"
     },
-    "class_type": "UpscaleModelLoader",
+    "class_type": "TurboWanModelLoader",
     "_meta": {
-      "title": "Charger le modèle de mise à l'échelle"
+      "title": "Load High Noise Model"
+    }
+  },
+  "21": {
+    "inputs": {
+      "value": [
+        "4",
+        0
+      ],
+      "model": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "UnloadModel",
+    "_meta": {
+      "title": "UnloadModel"
+    }
+  },
+  "22": {
+    "inputs": {
+      "value": [
+        "4",
+        0
+      ],
+      "model": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "UnloadModel",
+    "_meta": {
+      "title": "UnloadModel"
     }
   }
 }
