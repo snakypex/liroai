@@ -75,7 +75,7 @@
         0
       ],
       "vae": [
-        "31",
+        "32",
         0
       ],
       "image": [
@@ -232,20 +232,16 @@
       "title": "UnloadModel"
     }
   },
-  "31": {
+  "32": {
     "inputs": {
       "value": [
         "9",
         0
-      ],
-      "model": [
-        "2",
-        0
       ]
     },
-    "class_type": "UnloadModel",
+    "class_type": "UnloadAllModels",
     "_meta": {
-      "title": "UnloadModel"
+      "title": "UnloadAllModels"
     }
   }
 }
