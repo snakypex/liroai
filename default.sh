@@ -353,8 +353,8 @@ wget -O script.py "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/
 
 wget -O workflow.txt "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/turbowan_workflow_api.txt"
 
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-  
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,max_split_size_mb:128
+
 touch finish.finish
 
 nohup python script.py >/workspace/python.log 2>&1 &
