@@ -352,6 +352,8 @@ cd /workspace/
 wget -O script.py "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/comfyui_api_script.py"
 
 wget -O workflow.txt "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/turbowan_workflow_api.txt"
+
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
   
 touch finish.finish
 
