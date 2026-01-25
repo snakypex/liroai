@@ -52,7 +52,7 @@
       "aspect_ratio": "1:1",
       "boundary": 0.6,
       "sigma_max": 500,
-      "seed": 42,
+      "seed": 1050192817481530,
       "use_ode": false,
       "width": [
         "17",
@@ -63,19 +63,19 @@
         1
       ],
       "high_noise_model": [
-        "19",
+        "27",
         0
       ],
       "low_noise_model": [
-        "2",
+        "28",
         0
       ],
       "conditioning": [
-        "4",
+        "24",
         0
       ],
       "vae": [
-        "9",
+        "31",
         0
       ],
       "image": [
@@ -106,7 +106,7 @@
       "ensemble": true,
       "scale_factor": 1,
       "frames": [
-        "7",
+        "23",
         0
       ]
     },
@@ -128,7 +128,7 @@
       "pingpong": false,
       "save_output": true,
       "images": [
-        "12",
+        "26",
         0
       ]
     },
@@ -164,10 +164,62 @@
       "title": "Load High Noise Model"
     }
   },
-  "21": {
+  "23": {
+    "inputs": {
+      "value": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "UnloadAllModels",
+    "_meta": {
+      "title": "UnloadAllModels"
+    }
+  },
+  "24": {
     "inputs": {
       "value": [
         "4",
+        0
+      ]
+    },
+    "class_type": "UnloadAllModels",
+    "_meta": {
+      "title": "UnloadAllModels"
+    }
+  },
+  "26": {
+    "inputs": {
+      "value": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "UnloadAllModels",
+    "_meta": {
+      "title": "UnloadAllModels"
+    }
+  },
+  "27": {
+    "inputs": {
+      "value": [
+        "19",
+        0
+      ],
+      "model": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "UnloadModel",
+    "_meta": {
+      "title": "UnloadModel"
+    }
+  },
+  "28": {
+    "inputs": {
+      "value": [
+        "2",
         0
       ],
       "model": [
@@ -180,10 +232,10 @@
       "title": "UnloadModel"
     }
   },
-  "22": {
+  "31": {
     "inputs": {
       "value": [
-        "4",
+        "9",
         0
       ],
       "model": [
