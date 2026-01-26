@@ -26,7 +26,7 @@ PIP_PACKAGES=(
 
 # Combinaison des nodes des deux scripts
 NODES=(
-    "https://github.com/anveshane/Comfyui_turbodiffusion"
+    "https://github.com/freezelion/Comfyui_turbodiffusion_blockswap"
     "https://github.com/kijai/ComfyUI-WanVideoWrapper"
     "https://github.com/city96/ComfyUI-GGUF"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
