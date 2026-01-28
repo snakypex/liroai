@@ -101,7 +101,7 @@
     "inputs": {
       "ckpt_name": "rife47.pth",
       "clear_cache_after_n_frames": 1000,
-      "multiplier": 3,
+      "multiplier": 2,
       "fast_mode": true,
       "ensemble": true,
       "scale_factor": 1,
@@ -117,7 +117,7 @@
   },
   "13": {
     "inputs": {
-      "frame_rate": 60,
+      "frame_rate": 32,
       "loop_count": 0,
       "filename_prefix": "{{filename_prefix}}",
       "format": "video/h264-mp4",
