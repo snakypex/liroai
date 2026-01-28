@@ -60,7 +60,7 @@
             "94",
             1
           ],
-          "length": 81,
+          "length": {{length}},
           "batch_size": 1,
           "positive": [
             "85",
@@ -97,12 +97,12 @@
         "inputs": {
           "add_noise": "enable",
           "noise_seed": 868,
-          "steps": 4,
+          "steps": 8,
           "cfg": 1,
           "sampler_name": "euler",
           "scheduler": "beta",
           "start_at_step": 0,
-          "end_at_step": 2,
+          "end_at_step": 4,
           "return_with_leftover_noise": "enable",
           "model": [
             "67",
@@ -130,11 +130,11 @@
         "inputs": {
           "add_noise": "disable",
           "noise_seed": 0,
-          "steps": 4,
+          "steps": 8,
           "cfg": 1,
           "sampler_name": "euler",
           "scheduler": "beta",
-          "start_at_step": 2,
+          "start_at_step": 4,
           "end_at_step": 1000,
           "return_with_leftover_noise": "disable",
           "model": [
