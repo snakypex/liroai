@@ -333,7 +333,7 @@ source /venv/main/bin/activate
 cd /workspace/
 wget -O script.py "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/comfyui_api_script.py"
 
-wget -O workflow.txt "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/turbowan_workflow_api.txt"
+wget -O workflow.txt "https://raw.githubusercontent.com/snakypex/liroai/refs/heads/main/ltx_workflow.txt"
 
 touch finish.finish
 
