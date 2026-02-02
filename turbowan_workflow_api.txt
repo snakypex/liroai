@@ -139,7 +139,7 @@
   },
   "17": {
     "inputs": {
-      "preset": "720p",
+      "preset": "1080p",
       "strategy": "video_mode",
       "round_to": 8,
       "image": [
