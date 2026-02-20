@@ -39,8 +39,11 @@ NODES=(
     "https://github.com/princepainter/Comfyui-PainterFLF2V"
 )
 
-# URL du node Snakypex (fichier Python seul)
-SNK_NODE_URL="https://raw.githubusercontent.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p/refs/heads/main/comfy_ui_node_output_width_height_for_480_p_or_720_p.py"
+# URLs des nodes Snakypex (fichiers Python seuls)
+SNK_NODE_URL=(
+    "https://raw.githubusercontent.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p/refs/heads/main/comfy_ui_node_output_width_height_for_480_p_or_720_p.py"
+    "https://raw.githubusercontent.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p/refs/heads/main/audio_to_frames.py"
+)
 
 WORKFLOWS=(
 )
@@ -215,15 +218,18 @@ function provisioning_get_nodes() {
 }
 
 function provisioning_get_snk_node() {
-    # Télécharger le fichier Python du node Snakypex séparément
-    local snk_path="${NODES_DIR}/comfy_ui_res_node.py"
-    if [[ ! -f "$snk_path" ]]; then
-        printf "📥 Téléchargement du node Snakypex (fichier Python)...\n"
-        curl -L -o "$snk_path" "$SNK_NODE_URL"
-        printf "✨ Node Snakypex téléchargé\n"
-    else
-        printf "✅ Node Snakypex déjà présent\n"
-    fi
+    printf "\n--- INSTALLATION DES NODES SNAKYPEX (fichiers Python) ---\n"
+    for url in "${SNK_NODE_URL[@]}"; do
+        local filename="${url##*/}"
+        local filepath="${NODES_DIR}/${filename}"
+        if [[ -f "$filepath" ]]; then
+            printf "✅ Déjà présent: %s\n" "${filename}"
+        else
+            printf "📥 Téléchargement: %s...\n" "${filename}"
+            curl -L -o "$filepath" "$url"
+            printf "✨ Téléchargé: %s\n" "${filename}"
+        fi
+    done
 }
 
 function provisioning_get_files() {
