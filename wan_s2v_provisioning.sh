@@ -32,6 +32,11 @@ NODES=(
     "https://github.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p"
     "https://github.com/kijai/ComfyUI-GIMM-VFI"
     "https://github.com/kijai/ComfyUI-KJNodes"
+
+    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
+    "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation"
+    "https://github.com/SeanScripts/ComfyUI-Unload-Model"
+    "https://github.com/princepainter/Comfyui-PainterFLF2V"
 )
 
 # URL du node Snakypex (fichier Python seul)
