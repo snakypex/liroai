@@ -75,6 +75,7 @@ TEXT_ENCODERS=(
 
 AUDIO_ENCODERS=(
     "https://huggingface.co/chatpig/encoder/resolve/408aa40368e63fe92fa6d09219dc7532b94f9f5a/wav2vec2_large_english_fp16.safetensors"
+    "https://huggingface.co/jonatasgrosman/wav2vec2-large-fr-voxpopuli-french/resolve/refs%2Fpr%2F1/model.safetensors"
 )
 
 ### FONCTIONS ###
