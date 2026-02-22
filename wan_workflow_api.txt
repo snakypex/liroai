@@ -1,359 +1,372 @@
 {
-      "6": {
-        "inputs": {
-          "text": "{{positive_prompt}}",
-          "clip": [
-            "84",
-            0
-          ]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP Text Encode (Positive Prompt)"
-        }
-      },
-      "7": {
-        "inputs": {
-          "text": "{{negative_prompt}}",
-          "clip": [
-            "84",
-            0
-          ]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP Text Encode (Negative Prompt)"
-        }
-      },
-      "8": {
-        "inputs": {
-          "samples": [
-            "88",
-            0
-          ],
-          "vae": [
-            "39",
-            0
-          ]
-        },
-        "class_type": "VAEDecode",
-        "_meta": {
-          "title": "VAE Decode"
-        }
-      },
-      "39": {
-        "inputs": {
-          "vae_name": "Wan2.1_VAE.pth"
-        },
-        "class_type": "VAELoader",
-        "_meta": {
-          "title": "Charger VAE"
-        }
-      },
-      "50": {
-        "inputs": {
-          "width": [
-            "94",
-            0
-          ],
-          "height": [
-            "94",
-            1
-          ],
-          "length": {{length}},
-          "batch_size": 1,
-          "positive": [
-            "85",
-            0
-          ],
-          "negative": [
-            "7",
-            0
-          ],
-          "vae": [
-            "39",
-            0
-          ],
-          "start_image": [
-            "52",
-            0
-          ]
-        },
-        "class_type": "WanImageToVideo",
-        "_meta": {
-          "title": "WanImageVersVidéo"
-        }
-      },
-      "52": {
-        "inputs": {
-          "image": "{{input_image}}"
-        },
-        "class_type": "LoadImage",
-        "_meta": {
-          "title": "Charger Image"
-        }
-      },
-      "57": {
-        "inputs": {
-          "add_noise": "enable",
-          "noise_seed": 868,
-          "steps": 6,
-          "cfg": 1,
-          "sampler_name": "euler",
-          "scheduler": "beta",
-          "start_at_step": 0,
-          "end_at_step": 3,
-          "return_with_leftover_noise": "enable",
-          "model": [
-            "67",
-            0
-          ],
-          "positive": [
-            "50",
-            0
-          ],
-          "negative": [
-            "50",
-            1
-          ],
-          "latent_image": [
-            "50",
-            2
-          ]
-        },
-        "class_type": "KSamplerAdvanced",
-        "_meta": {
-          "title": "KSampler (Avancé)"
-        }
-      },
-      "58": {
-        "inputs": {
-          "add_noise": "disable",
-          "noise_seed": 0,
-          "steps": 6,
-          "cfg": 1,
-          "sampler_name": "euler",
-          "scheduler": "beta",
-          "start_at_step": 3,
-          "end_at_step": 1000,
-          "return_with_leftover_noise": "disable",
-          "model": [
-            "68",
-            0
-          ],
-          "positive": [
-            "50",
-            0
-          ],
-          "negative": [
-            "50",
-            1
-          ],
-          "latent_image": [
-            "87",
-            0
-          ]
-        },
-        "class_type": "KSamplerAdvanced",
-        "_meta": {
-          "title": "KSampler (Avancé)"
-        }
-      },
-      "61": {
-        "inputs": {
-          "unet_name": "Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"
-        },
-        "class_type": "UnetLoaderGGUF",
-        "_meta": {
-          "title": "Unet Loader (GGUF)"
-        }
-      },
-      "62": {
-        "inputs": {
-          "unet_name": "Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"
-        },
-        "class_type": "UnetLoaderGGUF",
-        "_meta": {
-          "title": "Unet Loader (GGUF)"
-        }
-      },
-      "64": {
-        "inputs": {
-          "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
-          "strength_model": 0.9,
-          "model": [
-            "61",
-            0
-          ]
-        },
-        "class_type": "LoraLoaderModelOnly",
-        "_meta": {
-          "title": "LoraLoaderModelOnly"
-        }
-      },
-      "66": {
-        "inputs": {
-          "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
-          "strength_model": 0.9,
-          "model": [
-            "62",
-            0
-          ]
-        },
-        "class_type": "LoraLoaderModelOnly",
-        "_meta": {
-          "title": "LoraLoaderModelOnly"
-        }
-      },
-      "67": {
-        "inputs": {
-          "shift": 5.000000000000002,
-          "model": [
-            "64",
-            0
-          ]
-        },
-        "class_type": "ModelSamplingSD3",
-        "_meta": {
-          "title": "ModèleÉchantillonnageSD3"
-        }
-      },
-      "68": {
-        "inputs": {
-          "shift": 5.000000000000002,
-          "model": [
-            "66",
-            0
-          ]
-        },
-        "class_type": "ModelSamplingSD3",
-        "_meta": {
-          "title": "ModèleÉchantillonnageSD3"
-        }
-      },
-      "82": {
-        "inputs": {
-          "frame_rate": 60,
-          "loop_count": 0,
-          "filename_prefix": "{{filename_prefix}}",
-          "format": "video/h264-mp4",
-          "pix_fmt": "yuv420p",
-          "crf": 15,
-          "save_metadata": true,
-          "trim_to_audio": false,
-          "pingpong": false,
-          "save_output": true,
-          "images": [
-            "83",
-            0
-          ]
-        },
-        "class_type": "VHS_VideoCombine",
-        "_meta": {
-          "title": "Video Combine 🎥🅥🅗🅢"
-        }
-      },
-      "83": {
-        "inputs": {
-          "ckpt_name": "rife47.pth",
-          "clear_cache_after_n_frames": 500,
-          "multiplier": 4,
-          "fast_mode": true,
-          "ensemble": true,
-          "scale_factor": 1,
-          "frames": [
-            "8",
-            0
-          ]
-        },
-        "class_type": "RIFE VFI",
-        "_meta": {
-          "title": "RIFE VFI (recommend rife47 and rife49)"
-        }
-      },
-      "84": {
-        "inputs": {
-          "clip_name": "umt5-xxl-encoder-Q5_K_M.gguf",
-          "type": "wan"
-        },
-        "class_type": "CLIPLoaderGGUF",
-        "_meta": {
-          "title": "CLIPLoader (GGUF)"
-        }
-      },
-      "85": {
-        "inputs": {
-          "value": [
-            "6",
-            0
-          ],
-          "model": [
-            "84",
-            0
-          ]
-        },
-        "class_type": "UnloadModel",
-        "_meta": {
-          "title": "UnloadModel"
-        }
-      },
-      "87": {
-        "inputs": {
-          "value": [
-            "57",
-            0
-          ],
-          "model": [
-            "61",
-            0
-          ]
-        },
-        "class_type": "UnloadModel",
-        "_meta": {
-          "title": "UnloadModel"
-        }
-      },
-      "88": {
-        "inputs": {
-          "value": [
-            "58",
-            0
-          ],
-          "model": [
-            "62",
-            0
-          ]
-        },
-        "class_type": "UnloadModel",
-        "_meta": {
-          "title": "UnloadModel"
-        }
-      },
-      "93": {
-        "inputs": {
-          "anything": [
-            "82",
-            0
-          ]
-        },
-        "class_type": "easy cleanGpuUsed",
-        "_meta": {
-          "title": "Clean VRAM Used"
-        }
-      },
-      "94": {
-        "inputs": {
-          "preset": "720p",
-          "strategy": "video_mode",
-          "round_to": 8,
-          "image": [
-            "52",
-            0
-          ]
-        },
-        "class_type": "ResizeToPresetKeepAR",
-        "_meta": {
-          "title": "Resize To 480p (Keep AR)"
-        }
-      }
+  "6": {
+    "inputs": {
+      "text": "{{positive_prompt}}",
+      "clip": [
+        "84",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
     }
+  },
+  "7": {
+    "inputs": {
+      "text": "{{negative_prompt}}",
+      "clip": [
+        "84",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "88",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "39": {
+    "inputs": {
+      "vae_name": "Wan2.1_VAE.pth"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Charger VAE"
+    }
+  },
+  "50": {
+    "inputs": {
+      "width": [
+        "94",
+        0
+      ],
+      "height": [
+        "94",
+        1
+      ],
+      "length": {{length}},
+      "batch_size": 1,
+      "positive": [
+        "85",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ],
+      "start_image": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "WanImageToVideo",
+    "_meta": {
+      "title": "WanImageVersVidéo"
+    }
+  },
+  "52": {
+    "inputs": {
+      "image": "{{input_image}}"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Charger Image"
+    }
+  },
+  "57": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 868,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "start_at_step": 0,
+      "end_at_step": 3,
+      "return_with_leftover_noise": "enable",
+      "model": [
+        "67",
+        0
+      ],
+      "positive": [
+        "50",
+        0
+      ],
+      "negative": [
+        "50",
+        1
+      ],
+      "latent_image": [
+        "50",
+        2
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Avancé)"
+    }
+  },
+  "58": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": 0,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "start_at_step": 3,
+      "end_at_step": 1000,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "68",
+        0
+      ],
+      "positive": [
+        "50",
+        0
+      ],
+      "negative": [
+        "50",
+        1
+      ],
+      "latent_image": [
+        "87",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Avancé)"
+    }
+  },
+  "61": {
+    "inputs": {
+      "unet_name": "Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "62": {
+    "inputs": {
+      "unet_name": "Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "64": {
+    "inputs": {
+      "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "61",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "66": {
+    "inputs": {
+      "lora_name": "Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "67": {
+    "inputs": {
+      "shift": 5,
+      "model": [
+        "64",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModèleÉchantillonnageSD3"
+    }
+  },
+  "68": {
+    "inputs": {
+      "shift": 5,
+      "model": [
+        "66",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModèleÉchantillonnageSD3"
+    }
+  },
+  "82": {
+    "inputs": {
+      "frame_rate": 60,
+      "loop_count": 0,
+      "filename_prefix": "fffff",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 15,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "95",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "84": {
+    "inputs": {
+      "clip_name": "umt5-xxl-encoder-Q5_K_M.gguf",
+      "type": "wan"
+    },
+    "class_type": "CLIPLoaderGGUF",
+    "_meta": {
+      "title": "CLIPLoader (GGUF)"
+    }
+  },
+  "85": {
+    "inputs": {
+      "value": [
+        "6",
+        0
+      ],
+      "model": [
+        "84",
+        0
+      ]
+    },
+    "class_type": "UnloadModel",
+    "_meta": {
+      "title": "UnloadModel"
+    }
+  },
+  "87": {
+    "inputs": {
+      "value": [
+        "57",
+        0
+      ],
+      "model": [
+        "61",
+        0
+      ]
+    },
+    "class_type": "UnloadModel",
+    "_meta": {
+      "title": "UnloadModel"
+    }
+  },
+  "88": {
+    "inputs": {
+      "value": [
+        "58",
+        0
+      ],
+      "model": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "UnloadModel",
+    "_meta": {
+      "title": "UnloadModel"
+    }
+  },
+  "93": {
+    "inputs": {
+      "anything": [
+        "82",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "Clean VRAM Used"
+    }
+  },
+  "94": {
+    "inputs": {
+      "preset": "720p",
+      "strategy": "video_mode",
+      "round_to": 8,
+      "image": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "ResizeToPresetKeepAR",
+    "_meta": {
+      "title": "Resize To 480p (Keep AR)"
+    }
+  },
+  "95": {
+    "inputs": {
+      "ds_factor": 1,
+      "interpolation_factor": 4,
+      "seed": 0,
+      "output_flows": false,
+      "gimmvfi_model": [
+        "96",
+        0
+      ],
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "GIMMVFI_interpolate",
+    "_meta": {
+      "title": "GIMM-VFI Interpolate"
+    }
+  },
+  "96": {
+    "inputs": {
+      "model": "gimmvfi_r_arb_lpips_fp32.safetensors",
+      "precision": "fp16",
+      "torch_compile": false
+    },
+    "class_type": "DownloadAndLoadGIMMVFIModel",
+    "_meta": {
+      "title": "(Down)Load GIMMVFI Model"
+    }
+  }
+}
