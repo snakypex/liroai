@@ -255,21 +255,18 @@
       },
       "83": {
         "inputs": {
-          "ckpt_name": "rife47.pth",
-          "clear_cache_after_n_frames": 500,
-          "multiplier": 4,
-          "fast_mode": true,
-          "ensemble": true,
-          "scale_factor": 1,
-          "frames": [
-            "8",
-            0
-          ]
-        },
-        "class_type": "RIFE VFI",
-        "_meta": {
-          "title": "RIFE VFI (recommend rife47 and rife49)"
-        }
+      "ckpt_name": "GMFSS_fortuna_union",
+      "clear_cache_after_n_frames": 500,
+      "multiplier": 4,
+      "frames": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "GMFSS Fortuna VFI",
+    "_meta": {
+      "title": "GMFSS Fortuna VFI"
+    }
       },
       "84": {
         "inputs": {
