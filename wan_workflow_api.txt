@@ -1,7 +1,7 @@
 {
   "6": {
     "inputs": {
-      "text": "{{positive_prompt}}",
+      "text": "positive_prompt",
       "clip": [
         "84",
         0
@@ -244,7 +244,7 @@
       "pingpong": false,
       "save_output": true,
       "images": [
-        "97",
+        "98",
         0
       ]
     },
@@ -369,21 +369,41 @@
       "title": "(Down)Load GIMMVFI Model"
     }
   },
-  "97": {
+  "98": {
     "inputs": {
-      "target_resolution": "2K",
-      "model_name": "RealESRGAN-x2plus",
-      "tile_size": 128,
-      "tile_overlap": 32,
-      "force_exact_resolution": false,
+      "upscale_model": [
+        "99",
+        0
+      ],
       "image": [
         "95",
         0
       ]
     },
-    "class_type": "SmartUpscaler",
+    "class_type": "ImageUpscaleWithModel",
     "_meta": {
-      "title": "🔍 Smart Upscaler (1080p/2K/4K/8K)"
+      "title": "Agrandir l'Image (à l'aide du Modèle)"
+    }
+  },
+  "99": {
+    "inputs": {
+      "model_name": "RealESRGAN-x2plus.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "Charger le modèle de mise à l'échelle"
+    }
+  },
+  "100": {
+    "inputs": {
+      "value": [
+        "98",
+        0
+      ]
+    },
+    "class_type": "UnloadAllModels",
+    "_meta": {
+      "title": "UnloadAllModels"
     }
   }
 }
