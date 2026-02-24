@@ -235,12 +235,12 @@
     "inputs": {
       "frame_rate": 60,
       "loop_count": 0,
-      "filename_prefix": "liroai",
-      "format": "video/nvenc_av1-mp4",
+      "filename_prefix": "liro",
+      "format": "video/h264-mp4",
       "pix_fmt": "yuv420p",
-      "bitrate": 30,
-      "megabit": true,
+      "crf": 15,
       "save_metadata": true,
+      "trim_to_audio": false,
       "pingpong": false,
       "save_output": true,
       "images": [
@@ -371,9 +371,9 @@
   },
   "97": {
     "inputs": {
-      "target_resolution": "2K",
-      "model_name": "RealESR-General-x4v3",
-      "tile_size": 256,
+      "target_resolution": "1080p",
+      "model_name": "RealESRGAN-x2plus",
+      "tile_size": 128,
       "tile_overlap": 32,
       "force_exact_resolution": false,
       "image": [
