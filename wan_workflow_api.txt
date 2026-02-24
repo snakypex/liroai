@@ -1,7 +1,7 @@
 {
   "6": {
     "inputs": {
-      "text": "{{positive_prompt}}",
+      "text": "positive_prompt",
       "clip": [
         "84",
         0
@@ -14,7 +14,7 @@
   },
   "7": {
     "inputs": {
-      "text": "{{negative_prompt}}",
+      "text": "negative_prompt",
       "clip": [
         "84",
         0
@@ -97,12 +97,12 @@
     "inputs": {
       "add_noise": "enable",
       "noise_seed": 868,
-      "steps": 6,
+      "steps": 4,
       "cfg": 1,
       "sampler_name": "euler",
       "scheduler": "beta",
       "start_at_step": 0,
-      "end_at_step": 3,
+      "end_at_step": 2,
       "return_with_leftover_noise": "enable",
       "model": [
         "67",
@@ -130,11 +130,11 @@
     "inputs": {
       "add_noise": "disable",
       "noise_seed": 0,
-      "steps": 6,
+      "steps": 4,
       "cfg": 1,
       "sampler_name": "euler",
       "scheduler": "beta",
-      "start_at_step": 3,
+      "start_at_step": 2,
       "end_at_step": 1000,
       "return_with_leftover_noise": "disable",
       "model": [
@@ -207,7 +207,7 @@
   },
   "67": {
     "inputs": {
-      "shift": 5,
+      "shift": 3,
       "model": [
         "64",
         0
@@ -220,7 +220,7 @@
   },
   "68": {
     "inputs": {
-      "shift": 5,
+      "shift": 3,
       "model": [
         "66",
         0
@@ -235,16 +235,16 @@
     "inputs": {
       "frame_rate": 60,
       "loop_count": 0,
-      "filename_prefix": "fffff",
-      "format": "video/h264-mp4",
+      "filename_prefix": "liroai",
+      "format": "video/nvenc_av1-mp4",
       "pix_fmt": "yuv420p",
-      "crf": 15,
+      "bitrate": 30,
+      "megabit": true,
       "save_metadata": true,
-      "trim_to_audio": false,
       "pingpong": false,
       "save_output": true,
       "images": [
-        "95",
+        "97",
         0
       ]
     },
@@ -367,6 +367,23 @@
     "class_type": "DownloadAndLoadGIMMVFIModel",
     "_meta": {
       "title": "(Down)Load GIMMVFI Model"
+    }
+  },
+  "97": {
+    "inputs": {
+      "target_resolution": "2K",
+      "model_name": "RealESR-General-x4v3",
+      "tile_size": 256,
+      "tile_overlap": 32,
+      "force_exact_resolution": false,
+      "image": [
+        "95",
+        0
+      ]
+    },
+    "class_type": "SmartUpscaler",
+    "_meta": {
+      "title": "🔍 Smart Upscaler (1080p/2K/4K/8K)"
     }
   }
 }
