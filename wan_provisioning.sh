@@ -36,6 +36,7 @@ NODES=(
     "https://github.com/SeanScripts/ComfyUI-Unload-Model"
     "https://github.com/snakypex/ComfyUI_node_output_width_height_for_480_p_or_720_p"
     "https://github.com/princepainter/Comfyui-PainterFLF2V"
+    "https://github.com/snakypex/Smart-Upscaler"
 )
 
 # URL du node Snakypex (fichier Python seul)
