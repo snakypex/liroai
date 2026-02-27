@@ -361,17 +361,17 @@
   },
   "98": {
     "inputs": {
-      "ckpt_name": "rife47.pth",
-      "clear_cache_after_n_frames": 10,
-      "multiplier": 4,
-      "fast_mode": true,
-      "ensemble": true,
-      "scale_factor": 1,
-      "frames": [
-        "97",
-        0
-      ]
-    },
+          "ckpt_name": "rife47.pth",
+          "clear_cache_after_n_frames": 10,
+          "multiplier": 4,
+          "fast_mode": true,
+          "ensemble": true,
+          "scale_factor": 1,
+          "frames": [
+            "8",
+            0
+          ]
+        },
     "class_type": "RIFE VFI",
     "_meta": {
       "title": "RIFE VFI (recommend rife47 and rife49)"
