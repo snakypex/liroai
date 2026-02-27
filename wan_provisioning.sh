@@ -29,7 +29,7 @@ NODES=(
     "https://github.com/kijai/ComfyUI-WanVideoWrapper"
     "https://github.com/city96/ComfyUI-GGUF"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
-    #"https://github.com/Fannovel16/ComfyUI-Frame-Interpolation"
+    "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation"
     #"https://github.com/killertofu86/ComfyUI-Frame-Interpolation"
     "https://github.com/kijai/ComfyUI-GIMM-VFI"
     "https://github.com/yolain/ComfyUI-Easy-Use"
