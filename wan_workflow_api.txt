@@ -86,7 +86,7 @@
   },
   "52": {
     "inputs": {
-      "image": "{{input_image}}"
+      "image": "A3E4C01C-79F6-4F11-8E1D-F4D759E7D1CD_1_102_o.jpeg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -96,7 +96,7 @@
   "57": {
     "inputs": {
       "add_noise": "enable",
-      "noise_seed": 868,
+      "noise_seed": 752774329456306,
       "steps": 8,
       "cfg": 1,
       "sampler_name": "euler",
@@ -129,7 +129,7 @@
   "58": {
     "inputs": {
       "add_noise": "disable",
-      "noise_seed": 0,
+      "noise_seed": 591874520473391,
       "steps": 8,
       "cfg": 1,
       "sampler_name": "euler",
@@ -244,7 +244,7 @@
       "pingpong": false,
       "save_output": true,
       "images": [
-        "95",
+        "98",
         0
       ]
     },
@@ -338,35 +338,43 @@
       "title": "Resize To 480p (Keep AR)"
     }
   },
-  "95": {
+  "97": {
     "inputs": {
-      "ds_factor": 1,
-      "interpolation_factor": 4,
-      "seed": 0,
-      "output_flows": false,
-      "gimmvfi_model": [
-        "96",
-        0
-      ],
+      "upscale_model": "RealESRGAN_x4plus_anime_6B",
+      "target_resolution": "4K (3840x2160)",
+      "tile_size": 256,
+      "fp16": true,
+      "temporal_denoise": 0.25,
+      "saturation": 1.05,
+      "contrast": 1.05,
+      "sharpen_strength": 0.3,
+      "line_enhance": 0.3,
       "images": [
         "8",
         0
       ]
     },
-    "class_type": "GIMMVFI_interpolate",
+    "class_type": "Wan2PostProcess",
     "_meta": {
-      "title": "GIMM-VFI Interpolate"
+      "title": "⚡ Wan2 Post-Process Pipeline"
     }
   },
-  "96": {
+  "98": {
     "inputs": {
-      "model": "gimmvfi_r_arb_lpips_fp32.safetensors",
-      "precision": "fp16",
-      "torch_compile": false
+      "ckpt_name": "rife47.pth",
+      "clear_cache_after_n_frames": 10,
+      "multiplier": 4,
+      "fast_mode": true,
+      "ensemble": true,
+      "scale_factor": 1,
+      "frames": [
+        "97",
+        0
+      ]
     },
-    "class_type": "DownloadAndLoadGIMMVFIModel",
+    "class_type": "RIFE VFI",
     "_meta": {
-      "title": "(Down)Load GIMMVFI Model"
+      "title": "RIFE VFI (recommend rife47 and rife49)"
     }
   }
 }
