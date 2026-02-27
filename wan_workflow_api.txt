@@ -74,7 +74,7 @@
         "39",
         0
       ],
-      "start_image": [
+      "start_": [
         "52",
         0
       ]
@@ -86,7 +86,7 @@
   },
   "52": {
     "inputs": {
-      "image": "A3E4C01C-79F6-4F11-8E1D-F4D759E7D1CD_1_102_o.jpeg"
+      "image": "{{input_image}}"
     },
     "class_type": "LoadImage",
     "_meta": {
